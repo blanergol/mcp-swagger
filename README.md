@@ -1,22 +1,22 @@
 # MCP Swagger Gateway (Go)
 
-MCP-сервер на Go, который:
+An MCP server in Go that:
 
-- загружает Swagger/OpenAPI (JSON/YAML, файл или URL),
-- публикует структуру API как MCP resources,
-- даёт инструменты MCP для подготовки/валидации/безопасного выполнения реальных HTTP-вызовов,
-- работает как контролируемый gateway между AI-агентом и upstream API.
+- loads Swagger/OpenAPI (JSON/YAML, file or URL),
+- publishes API structure as MCP resources,
+- provides MCP tools for preparing/validating/safely executing real HTTP calls,
+- works as a controlled gateway between an AI agent and an upstream API.
 
 ## Quick Start
 
-1. Подготовка:
+1. Preparation:
 
 ```bash
 make tidy
 make build
 ```
 
-2. Запуск в `stdio` (по умолчанию):
+2. Run in `stdio` (default):
 
 ```bash
 export TRANSPORT=stdio
@@ -25,7 +25,7 @@ export MCP_API_MODE=plan_only
 make run
 ```
 
-Тот же запуск через CLI-аргументы:
+Same run via CLI arguments:
 
 ```bash
 go run ./cmd/mcp-server \
@@ -34,7 +34,7 @@ go run ./cmd/mcp-server \
   --mcp-api-mode=plan_only
 ```
 
-3. Запуск с `SWAGGER_PATH` как URL (production-safe):
+3. Run with `SWAGGER_PATH` as URL (production-safe):
 
 ```bash
 export TRANSPORT=stdio
@@ -47,7 +47,7 @@ export SWAGGER_USER_AGENT=MCP-Swagger-Loader/1.0
 make run
 ```
 
-4. Запуск `streamable` HTTP + inbound OAuth (пример JWKS):
+4. Run `streamable` HTTP + inbound OAuth (JWKS example):
 
 ```bash
 export TRANSPORT=streamable
@@ -62,7 +62,7 @@ export INBOUND_OAUTH_REQUIRED_SCOPES=mcp:tools.call
 make run
 ```
 
-5. Проверка:
+5. Verification:
 
 ```bash
 curl -s http://127.0.0.1:8080/healthz
@@ -70,83 +70,83 @@ curl -s http://127.0.0.1:8080/healthz
 
 ---
 
-## Статус реализации (аудит по коду)
+## Implementation Status (code audit)
 
-| Функция | Статус | Комментарий |
+| Feature | Status | Comment |
 |---|---|---|
-| MCP transport `stdio` | ✅ реализовано | `internal/server/stdio` |
-| MCP transport `streamable HTTP` | ✅ реализовано | `/healthz` + `/mcp` через SDK handler |
-| Детали HTTP-поведения `/mcp` (Accept/session/version) | ⚠️ ограничение/условие | Поведение частично определяется `go-sdk` (`mcp.NewStreamableHTTPHandler`) |
-| Inbound OAuth 2.1 (JWKS + Introspection) | ✅ реализовано | `internal/auth` |
-| Outbound auth к upstream (none/static/api_key/oauth_cc) | ✅ реализовано | `internal/upstreamauth` |
-| Guardrails/policy (mode + allow/deny + confirmation_required) | ✅ реализовано | `internal/policy` |
-| Human-in-the-loop confirmation flow (`policy.request_confirmation`, `policy.confirm`) | ✅ реализовано | In-memory TTL store + проверка в `swagger.http.execute` |
-| SSRF-защита (allowlist + private networks + redirect policy) | ✅ реализовано | `internal/netguard`, проверки на старте и перед execute |
-| Swagger resources (`swagger:endpoints/...`) | ✅ реализовано | `internal/resouce/swagger_store.go` |
-| Формальные JSON Schema для tools + docs resource | ✅ реализовано | `internal/tool/schemas.go` + resource `docs:tool-schemas` |
-| Swagger schema resolution (`$ref`) | ✅ реализовано | `$ref` раскрываются рекурсивно |
-| Композиции `allOf/oneOf/anyOf` | ⚠️ ограничение/условие | Структуры сохраняются как есть, вложенные `$ref` раскрываются, полного merge нет |
-| Циклические схемы | ⚠️ ограничение/условие | Маркеры `x-circularRef`/`x-unresolvedRef` вместо бесконечного раскрытия |
-| Structured audit logging + redaction | ✅ реализовано | `internal/audit` |
-| Автогенерация correlation id + прокидка в upstream/audit | ✅ реализовано | middleware streamable + fallback в `swagger.http.execute` |
-| Встроенные метрики Prometheus (`/metrics`) | ✅ реализовано | `internal/metrics` + endpoint `GET /metrics` |
+| MCP transport `stdio` | ✅ implemented | `internal/server/stdio` |
+| MCP transport `streamable HTTP` | ✅ implemented | `/healthz` + `/mcp` via SDK handler |
+| HTTP behavior details for `/mcp` (Accept/session/version) | ⚠️ limitation/condition | Behavior is partially determined by `go-sdk` (`mcp.NewStreamableHTTPHandler`) |
+| Inbound OAuth 2.1 (JWKS + Introspection) | ✅ implemented | `internal/auth` |
+| Outbound auth to upstream (none/static/api_key/oauth_cc) | ✅ implemented | `internal/upstreamauth` |
+| Guardrails/policy (mode + allow/deny + confirmation_required) | ✅ implemented | `internal/policy` |
+| Human-in-the-loop confirmation flow (`policy.request_confirmation`, `policy.confirm`) | ✅ implemented | In-memory TTL store + check in `swagger.http.execute` |
+| SSRF protection (allowlist + private networks + redirect policy) | ✅ implemented | `internal/netguard`, checks at startup and before execute |
+| Swagger resources (`swagger:endpoints/...`) | ✅ implemented | `internal/resouce/swagger_store.go` |
+| Formal JSON Schema for tools + docs resource | ✅ implemented | `internal/tool/schemas.go` + resource `docs:tool-schemas` |
+| Swagger schema resolution (`$ref`) | ✅ implemented | `$ref` are resolved recursively |
+| Compositions `allOf/oneOf/anyOf` | ⚠️ limitation/condition | Structures are preserved as-is, nested `$ref` are resolved, no full merge |
+| Circular schemas | ⚠️ limitation/condition | `x-circularRef`/`x-unresolvedRef` markers instead of infinite resolution |
+| Structured audit logging + redaction | ✅ implemented | `internal/audit` |
+| Auto-generation of correlation id + propagation to upstream/audit | ✅ implemented | middleware streamable + fallback in `swagger.http.execute` |
+| Built-in Prometheus metrics (`/metrics`) | ✅ implemented | `internal/metrics` + endpoint `GET /metrics` |
 
 ## Table of Contents
 
-- [Статус реализации (аудит по коду)](#статус-реализации-аудит-по-коду)
-- [Что это и зачем](#что-это-и-зачем)
-- [Архитектура](#архитектура)
-- [Транспорты MCP](#транспорты-mcp)
-- [HTTP Контракт Streamable](#http-контракт-streamable)
-- [Конфигурация (ENV)](#конфигурация-env)
-- [Запуск DEV/PROD](#запуск-devprod)
+- [Implementation Status (code audit)](#implementation-status-code-audit)
+- [What Is This and Why](#what-is-this-and-why)
+- [Architecture](#architecture)
+- [MCP Transports](#mcp-transports)
+- [HTTP Contract Streamable](#http-contract-streamable)
+- [Configuration (ENV)](#configuration-env)
+- [Running DEV/PROD](#running-devprod)
 - [MCP Resources](#mcp-resources)
 - [Tool Schemas](#tool-schemas)
 - [MCP Tools](#mcp-tools)
 - [MCP Prompt Templates](#mcp-prompt-templates)
-- [Безопасность и Guardrails](#безопасность-и-guardrails)
+- [Security and Guardrails](#security-and-guardrails)
 - [Observability](#observability)
 - [Roadmap](#roadmap)
 - [FAQ / Troubleshooting](#faq--troubleshooting)
-- [Hands-on сценарии](#hands-on-сценарии)
+- [Hands-on Scenarios](#hands-on-scenarios)
 
 ---
 
-## Что это и зачем
+## What Is This and Why
 
 ### What
 
-Проект превращает OpenAPI-спеку в runtime-интерфейс для AI-агента:
+The project turns an OpenAPI spec into a runtime interface for an AI agent:
 
-- агент читает ресурсы (`swagger:*`),
-- строит запросы tools’ами,
-- выполняет вызовы только через `swagger.http.execute`.
+- the agent reads resources (`swagger:*`),
+- builds requests using tools,
+- executes calls only through `swagger.http.execute`.
 
 ### Why
 
-Решает практические проблемы:
+Solves practical problems:
 
-- единый канал выполнения реальных API-вызовов,
-- контроль auth, политики, лимитов, аудита,
-- меньше риска произвольных/опасных вызовов,
-- прозрачный контракт: факт ответа сравнивается со Swagger.
+- single channel for executing real API calls,
+- control over auth, policies, limits, audit,
+- less risk of arbitrary/dangerous calls,
+- transparent contract: the response fact is compared against Swagger.
 
 ### How
 
-Коротко: **resource discovery -> request prepare/validate -> controlled execute -> response validate**.
+In short: **resource discovery -> request prepare/validate -> controlled execute -> response validate**.
 
 ---
 
-## Архитектура
+## Architecture
 
-### Принципы
+### Principles
 
-- `transport -> usecase` через интерфейсы (`usecase.Service`).
-- `usecase` не зависит от MCP SDK и транспорта.
-- `tool` не ходит в transport напрямую.
-- inbound auth (к MCP) и outbound auth (к upstream) разделены.
+- `transport -> usecase` via interfaces (`usecase.Service`).
+- `usecase` does not depend on MCP SDK or transport.
+- `tool` does not access transport directly.
+- inbound auth (to MCP) and outbound auth (to upstream) are separated.
 
-### Диаграмма слоёв (ASCII)
+### Layer Diagram (ASCII)
 
 ```text
 Clients/Agents
@@ -182,18 +182,18 @@ Clients/Agents
 +-----------------------------+
 ```
 
-### Где что находится
+### Where Things Are Located
 
-- Inbound OAuth 2.1 Resource Server: `internal/auth` + middleware на `/mcp`.
-- Outbound auth к реальному API: `internal/upstreamauth` (используется tool `swagger.http.execute`).
-- Политики: `internal/policy`.
-- HTTP ограничения/лимиты: `internal/httpclient`.
-- Аудит и редактирование секретов: `internal/audit`.
-- Swagger кэш и резолвинг: `internal/swagger`.
+- Inbound OAuth 2.1 Resource Server: `internal/auth` + middleware on `/mcp`.
+- Outbound auth to the real API: `internal/upstreamauth` (used by tool `swagger.http.execute`).
+- Policies: `internal/policy`.
+- HTTP constraints/limits: `internal/httpclient`.
+- Audit and secret redaction: `internal/audit`.
+- Swagger cache and resolution: `internal/swagger`.
 
-### Кэши
+### Caches
 
-- Swagger cache: lazy-load + TTL (`SWAGGER_CACHE_TTL`) или reload per request (`SWAGGER_RELOAD=true`).
+- Swagger cache: lazy-load + TTL (`SWAGGER_CACHE_TTL`) or reload per request (`SWAGGER_RELOAD=true`).
 - Inbound OAuth cache:
   - JWKS cache TTL,
   - introspection cache TTL.
@@ -202,24 +202,24 @@ Clients/Agents
 
 ---
 
-## Транспорты MCP
+## MCP Transports
 
 ## STDIO (default) ✅
 
-Когда использовать:
+When to use:
 
-- локальная интеграция,
-- MCP как subprocess.
+- local integration,
+- MCP as subprocess.
 
-Запуск:
+Running:
 
 ```bash
 TRANSPORT=stdio SWAGGER_PATH=./openapi.yaml go run ./cmd/mcp-server
-# или через флаги
+# or via flags
 go run ./cmd/mcp-server --transport=stdio --swagger-path=./openapi.yaml
 ```
 
-Пример subprocess (Python):
+Subprocess example (Python):
 
 ```python
 import os
@@ -240,12 +240,12 @@ proc = subprocess.Popen(
 
 Endpoints:
 
-- `GET /healthz` (без auth)
+- `GET /healthz` (no auth)
 - `POST /mcp` (MCP JSON-RPC, inbound OAuth)
 - `GET /mcp` (standalone SSE stream, inbound OAuth)
-- `DELETE /mcp` (завершение MCP session, inbound OAuth)
+- `DELETE /mcp` (MCP session termination, inbound OAuth)
 
-Пример initialize:
+Initialize example:
 
 ```bash
 curl -i -X POST http://127.0.0.1:8080/mcp \
@@ -256,79 +256,79 @@ curl -i -X POST http://127.0.0.1:8080/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"curl-client","version":"0.1.0"},"capabilities":{}}}'
 ```
 
-Выбор транспорта:
+Transport selection:
 
 ```bash
 TRANSPORT=stdio
-# или
+# or
 TRANSPORT=streamable
 HTTP_ADDR=:8080
 ```
 
-Что выбрать:
+What to choose:
 
-- `stdio` — простой локальный сценарий.
-- `streamable` — сетевой сценарий, OAuth, аудит, multi-client.
+- `stdio` — simple local scenario.
+- `streamable` — network scenario, OAuth, audit, multi-client.
 
-## HTTP Контракт Streamable ✅
+## HTTP Contract Streamable ✅
 
-Ниже контракт **фактической реализации** `internal/server/streamable` на базе `mcp.NewStreamableHTTPHandler` (go-sdk v1.3.1).
+Below is the contract of the **actual implementation** of `internal/server/streamable` based on `mcp.NewStreamableHTTPHandler` (go-sdk v1.3.1).
 
-Поведение `/mcp` частично делегировано SDK handler; после обновления `go-sdk` проверяйте интеграционные тесты `internal/server/streamable/http_handlers_test.go`.
+The `/mcp` behavior is partially delegated to the SDK handler; after updating `go-sdk`, verify integration tests at `internal/server/streamable/http_handlers_test.go`.
 
-### Пути и методы
+### Paths and Methods
 
-| Method | Path | Auth | Назначение |
+| Method | Path | Auth | Purpose |
 |---|---|---|---|
-| `GET` | `/healthz` | нет | liveness/readiness |
-| `GET` | `/metrics` | опционально (`METRICS_AUTH_REQUIRED`) | Prometheus metrics |
-| `POST` | `/mcp` | Bearer обязателен | отправка MCP JSON-RPC сообщений |
-| `GET` | `/mcp` | Bearer обязателен | standalone SSE stream для server->client сообщений |
-| `DELETE` | `/mcp` | Bearer обязателен | закрытие MCP session |
+| `GET` | `/healthz` | none | liveness/readiness |
+| `GET` | `/metrics` | optional (`METRICS_AUTH_REQUIRED`) | Prometheus metrics |
+| `POST` | `/mcp` | Bearer required | sending MCP JSON-RPC messages |
+| `GET` | `/mcp` | Bearer required | standalone SSE stream for server->client messages |
+| `DELETE` | `/mcp` | Bearer required | closing MCP session |
 
-### Обязательные/условные заголовки
+### Required/Conditional Headers
 
-- Для всех `/mcp` запросов: `Authorization: Bearer <token>`
-- `X-Correlation-Id` (или значение `CORRELATION_ID_HEADER`) опционален; если отсутствует, сервер сгенерирует UUID и вернёт его в response headers
+- For all `/mcp` requests: `Authorization: Bearer <token>`
+- `X-Correlation-Id` (or value of `CORRELATION_ID_HEADER`) is optional; if absent, the server will generate a UUID and return it in response headers
 - `POST /mcp`:
   - `Content-Type: application/json`
-  - `Accept` должен включать **и** `application/json`, **и** `text/event-stream` (или `*/*`)
+  - `Accept` must include **both** `application/json` **and** `text/event-stream` (or `*/*`)
 - `GET /mcp`:
   - `Accept: text/event-stream`
-  - `Mcp-Session-Id: <session-id>` (обязателен)
+  - `Mcp-Session-Id: <session-id>` (required)
 - `DELETE /mcp`:
-  - `Mcp-Session-Id: <session-id>` (обязателен)
+  - `Mcp-Session-Id: <session-id>` (required)
 - `Mcp-Protocol-Version`:
-  - рекомендуется отправлять на `/mcp` запросах;
-  - при отсутствии используется fallback SDK;
-  - в текущих интеграционных тестах явно проверена версия `2025-06-18`.
+  - recommended to send on `/mcp` requests;
+  - if absent, SDK fallback is used;
+  - in current integration tests, version `2025-06-18` is explicitly verified.
 
-### Коды ответов
+### Response Codes
 
 - `/healthz`:
   - `200` — OK
-  - `405` — метод не `GET`
+  - `405` — method is not `GET`
 - `/mcp`:
-  - `200` — успешный `POST` call/request-response или активный `GET` stream
-  - `202` — `POST` с notifications-only (без call)
-  - `204` — успешный `DELETE` (session terminated)
+  - `200` — successful `POST` call/request-response or active `GET` stream
+  - `202` — `POST` with notifications-only (no call)
+  - `204` — successful `DELETE` (session terminated)
   - `400` — bad request (Accept/headers/body/protocol version/invalid payload)
-  - `401` — отсутствует/невалидный bearer token
-  - `403` — bearer валиден, но недостаточно прав
-  - `404` — session не найдена (`Mcp-Session-Id` неизвестен/закрыт)
-  - `405` — неподдерживаемый HTTP метод
+  - `401` — missing/invalid bearer token
+  - `403` — bearer is valid but insufficient permissions
+  - `404` — session not found (`Mcp-Session-Id` unknown/closed)
+  - `405` — unsupported HTTP method
 
-### Реальные особенности текущей реализации ⚠️
+### Real Implementation Details ⚠️
 
-- Режим SDK handler: **stateful**, `JSONResponse=false` (по умолчанию), поэтому `POST /mcp` ответы идут как `text/event-stream`.
-- На `initialize` сервер возвращает `Mcp-Session-Id` в HTTP headers; этот ID нужно передавать в последующих `POST/GET/DELETE /mcp`.
-- Event replay через `Last-Event-ID` не включён (EventStore не настроен).
-- Интеграционные тесты в репозитории покрывают `GET /healthz` и `POST /mcp` (`initialize`); остальные HTTP-варианты `/mcp` зависят от SDK и должны проверяться при апдейтах.
+- SDK handler mode: **stateful**, `JSONResponse=false` (by default), so `POST /mcp` responses are sent as `text/event-stream`.
+- On `initialize`, the server returns `Mcp-Session-Id` in HTTP headers; this ID must be passed in subsequent `POST/GET/DELETE /mcp`.
+- Event replay via `Last-Event-ID` is not enabled (EventStore is not configured).
+- Integration tests in the repository cover `GET /healthz` and `POST /mcp` (`initialize`); other HTTP variants of `/mcp` depend on the SDK and should be verified during updates.
 - CORS:
-  - выключен по умолчанию;
-  - при включении (`CORS_ALLOWED_ORIGINS`) preflight `OPTIONS` обслуживается только для разрешённых origin.
+  - disabled by default;
+  - when enabled (`CORS_ALLOWED_ORIGINS`), preflight `OPTIONS` is served only for allowed origins.
 
-### Полный цикл по HTTP (initialize -> initialized -> tools/resources -> close)
+### Full HTTP Cycle (initialize -> initialized -> tools/resources -> close)
 
 ```bash
 TOKEN="<oauth-bearer>"
@@ -346,7 +346,7 @@ curl -sS -D /tmp/mcp-init.hdr -o /tmp/mcp-init.body \
 SESSION_ID="$(awk 'BEGIN{IGNORECASE=1} /^Mcp-Session-Id:/ {print $2}' /tmp/mcp-init.hdr | tr -d '\r')"
 echo "SESSION_ID=$SESSION_ID"
 
-# 2) notifications/initialized (обычно 202 Accepted)
+# 2) notifications/initialized (typically 202 Accepted)
 curl -sS -i \
   -X POST "$BASE/mcp" \
   -H "Authorization: Bearer $TOKEN" \
@@ -356,7 +356,7 @@ curl -sS -i \
   -H "Mcp-Protocol-Version: 2025-06-18" \
   -d '{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}'
 
-# 3) tools/list (SSE ответ с JSON-RPC сообщением в data:)
+# 3) tools/list (SSE response with JSON-RPC message in data:)
 curl -sS -i \
   -X POST "$BASE/mcp" \
   -H "Authorization: Bearer $TOKEN" \
@@ -383,19 +383,19 @@ curl -sS -i \
   -H "Mcp-Session-Id: $SESSION_ID"
 ```
 
-Ограничения:
+Limitations:
 
-- Legacy SSE transport endpoint (типа `/sse`) не поддерживается.
-- `POST /mcp` с `Accept: application/json` без `text/event-stream` отклоняется (`400`).
-- `GET /mcp` без `Mcp-Session-Id` отклоняется (`400`).
+- Legacy SSE transport endpoint (like `/sse`) is not supported.
+- `POST /mcp` with `Accept: application/json` without `text/event-stream` is rejected (`400`).
+- `GET /mcp` without `Mcp-Session-Id` is rejected (`400`).
 
 ---
 
-## Конфигурация (ENV)
+## Configuration (ENV)
 
-### CLI аргументы
+### CLI Arguments
 
-Сервер можно запускать как CLI-инструмент и передавать конфиг через флаги.
+The server can be run as a CLI tool with configuration passed via flags.
 
 ```bash
 go run ./cmd/mcp-server \
@@ -404,7 +404,7 @@ go run ./cmd/mcp-server \
   --mcp-api-mode=plan_only
 ```
 
-Поддерживаемые именованные флаги:
+Supported named flags:
 
 - `--transport`
 - `--http-addr`
@@ -418,7 +418,7 @@ go run ./cmd/mcp-server \
 - `--upstream-base-url`
 - `--upstream-sandbox-base-url`
 
-Для любого параметра из ENV-таблиц используйте repeatable `--set KEY=VALUE`:
+For any parameter from the ENV tables, use the repeatable `--set KEY=VALUE`:
 
 ```bash
 go run ./cmd/mcp-server \
@@ -428,115 +428,115 @@ go run ./cmd/mcp-server \
   --set INBOUND_OAUTH_JWKS_URL=https://issuer.example.com/.well-known/jwks.json
 ```
 
-Приоритет источников конфигурации:
+Configuration source priority:
 
 1. ENV
 2. `--set KEY=VALUE`
-3. Именованные CLI-флаги
+3. Named CLI flags
 
-Важно: inbound и outbound OAuth конфиги теперь независимы:
+Important: inbound and outbound OAuth configs are now independent:
 
-- **Inbound** (MCP как Resource Server): `INBOUND_OAUTH_*`
-- **Outbound** (MCP как OAuth client к upstream): `UPSTREAM_OAUTH_*`
+- **Inbound** (MCP as Resource Server): `INBOUND_OAUTH_*`
+- **Outbound** (MCP as OAuth client to upstream): `UPSTREAM_OAUTH_*`
 
-### Обратная совместимость
+### Backward Compatibility
 
-Поддерживается fallback со старых `OAUTH_*` переменных.
+Fallback from legacy `OAUTH_*` variables is supported.
 
-Поведение:
+Behavior:
 
-- если новый `INBOUND_OAUTH_*`/`UPSTREAM_OAUTH_*` задан — он имеет приоритет,
-- если новый не задан, может использоваться legacy `OAUTH_*`,
-- при fallback пишется warning в лог.
+- if the new `INBOUND_OAUTH_*`/`UPSTREAM_OAUTH_*` is set — it takes priority,
+- if the new one is not set, the legacy `OAUTH_*` may be used,
+- a warning is logged on fallback.
 
 ## A) Server / Transport
 
-| ENV | Default | Формат | Пример | Влияние |
+| ENV | Default | Format | Example | Effect |
 |---|---|---|---|---|
-| `TRANSPORT` | `stdio` | `stdio\|streamable` | `streamable` | Выбор транспорта |
-| `HTTP_ADDR` | `:8080` | host:port | `0.0.0.0:8080` | Адрес HTTP server |
-| `VERSION` | `dev` | string | `1.4.0` | Версия сервиса |
-| `LOG_LEVEL` | `info` | `debug\|info\|warn\|error` | `debug` | Уровень логов |
-| `CORRELATION_ID_HEADER` | `X-Correlation-Id` | string | `X-Request-Id` | Имя correlation header для входящих/исходящих HTTP вызовов |
+| `TRANSPORT` | `stdio` | `stdio\|streamable` | `streamable` | Transport selection |
+| `HTTP_ADDR` | `:8080` | host:port | `0.0.0.0:8080` | HTTP server address |
+| `VERSION` | `dev` | string | `1.4.0` | Service version |
+| `LOG_LEVEL` | `info` | `debug\|info\|warn\|error` | `debug` | Log level |
+| `CORRELATION_ID_HEADER` | `X-Correlation-Id` | string | `X-Request-Id` | Correlation header name for incoming/outgoing HTTP calls |
 | `HTTP_READ_TIMEOUT` | `15s` | duration | `20s` | Read timeout |
 | `HTTP_READ_HEADER_TIMEOUT` | `5s` | duration | `5s` | Header timeout |
 | `HTTP_WRITE_TIMEOUT` | `30s` | duration | `45s` | Write timeout |
 | `HTTP_IDLE_TIMEOUT` | `60s` | duration | `120s` | Idle timeout |
 | `HTTP_SHUTDOWN_TIMEOUT` | `10s` | duration | `15s` | Graceful shutdown |
 | `HTTP_SESSION_TIMEOUT` | `2m` | duration | `10m` | MCP session timeout |
-| `HTTP_MAX_BODY_BYTES` | `1048576` | int64 | `2097152` | Ограничение body для `/mcp` |
-| `METRICS_AUTH_REQUIRED` | `false` | bool | `true` | Требовать Bearer auth для `GET /metrics` |
+| `HTTP_MAX_BODY_BYTES` | `1048576` | int64 | `2097152` | Body limit for `/mcp` |
+| `METRICS_AUTH_REQUIRED` | `false` | bool | `true` | Require Bearer auth for `GET /metrics` |
 
 ## B) Swagger / OpenAPI
 
-| ENV | Default | Формат | Пример | Влияние |
+| ENV | Default | Format | Example | Effect |
 |---|---|---|---|---|
-| `SWAGGER_PATH` | `""` | local path / URL | `./openapi.yaml` или `https://specs.example.com/openapi.yaml` | Источник спек |
-| `SWAGGER_FORMAT` | `auto` | `auto\|json\|yaml` | `yaml` | Режим парсинга |
-| `SWAGGER_BASE_URL` | `""` | URL | `https://api.example.com` | override base URL в resolver |
-| `SWAGGER_RELOAD` | `false` | bool | `true` | reload на каждый запрос |
-| `SWAGGER_CACHE_TTL` | `5m` | duration | `10m` | TTL кэша swagger |
-| `SWAGGER_HTTP_TIMEOUT` | `10s` | duration | `15s` | timeout HTTP-загрузки swagger по URL |
-| `SWAGGER_MAX_BYTES` | `5242880` | int64 bytes | `10485760` | лимит размера swagger payload (file и URL) |
-| `SWAGGER_USER_AGENT` | `MCP-Swagger-Loader/1.0` | string | `MCP-Swagger-Loader/2.0` | User-Agent при HTTP-загрузке swagger |
-| `SWAGGER_ALLOWED_HOSTS` | `""` | csv | `raw.githubusercontent.com,specs.example.com` | allowlist hosts для `SWAGGER_PATH` URL |
+| `SWAGGER_PATH` | `""` | local path / URL | `./openapi.yaml` or `https://specs.example.com/openapi.yaml` | Spec source |
+| `SWAGGER_FORMAT` | `auto` | `auto\|json\|yaml` | `yaml` | Parsing mode |
+| `SWAGGER_BASE_URL` | `""` | URL | `https://api.example.com` | Override base URL in resolver |
+| `SWAGGER_RELOAD` | `false` | bool | `true` | Reload on every request |
+| `SWAGGER_CACHE_TTL` | `5m` | duration | `10m` | Swagger cache TTL |
+| `SWAGGER_HTTP_TIMEOUT` | `10s` | duration | `15s` | HTTP timeout for loading swagger via URL |
+| `SWAGGER_MAX_BYTES` | `5242880` | int64 bytes | `10485760` | Swagger payload size limit (file and URL) |
+| `SWAGGER_USER_AGENT` | `MCP-Swagger-Loader/1.0` | string | `MCP-Swagger-Loader/2.0` | User-Agent for HTTP swagger loading |
+| `SWAGGER_ALLOWED_HOSTS` | `""` | csv | `raw.githubusercontent.com,specs.example.com` | Host allowlist for `SWAGGER_PATH` URL |
 
 `SWAGGER_FORMAT=auto`:
 
-1. По расширению файла или URL path (`.json`, `.yaml`, `.yml`)
-2. Затем попытка JSON -> YAML
+1. By file extension or URL path (`.json`, `.yaml`, `.yml`)
+2. Then attempt JSON -> YAML
 
 `SWAGGER_PATH`:
 
-- локальный путь: `./openapi.yaml`, `/etc/spec/openapi.json`;
-- URL: только `http://` или `https://`;
-- `file://` и другие схемы отклоняются.
-- для URL редиректы разрешены только на policy-валидные target URL и ограничены `5` hops.
+- local path: `./openapi.yaml`, `/etc/spec/openapi.json`;
+- URL: only `http://` or `https://`;
+- `file://` and other schemes are rejected.
+- for URLs, redirects are allowed only to policy-valid target URLs and limited to `5` hops.
 
 ## C) Inbound OAuth (MCP Resource Server)
 
-### Общие inbound параметры
+### Common Inbound Parameters
 
-| ENV | Default | Формат | Пример | Влияние |
+| ENV | Default | Format | Example | Effect |
 |---|---|---|---|---|
-| `INBOUND_OAUTH_ISSUER` | `""` | URL/string | `https://issuer.example.com` | Проверка `iss` |
-| `INBOUND_OAUTH_AUDIENCE` | `""` | string | `mcp-api` | Проверка `aud` |
-| `INBOUND_OAUTH_REQUIRED_SCOPES` | `""` | csv/space list | `mcp:tools.call` | required scopes |
+| `INBOUND_OAUTH_ISSUER` | `""` | URL/string | `https://issuer.example.com` | `iss` validation |
+| `INBOUND_OAUTH_AUDIENCE` | `""` | string | `mcp-api` | `aud` validation |
+| `INBOUND_OAUTH_REQUIRED_SCOPES` | `""` | csv/space list | `mcp:tools.call` | Required scopes |
 
-### JWKS режим
+### JWKS Mode
 
-| ENV | Default | Формат | Пример | Влияние |
+| ENV | Default | Format | Example | Effect |
 |---|---|---|---|---|
-| `INBOUND_OAUTH_JWKS_URL` | `""` | URL | `https://issuer/.well-known/jwks.json` | включает JWT/JWKS mode |
-| `INBOUND_OAUTH_JWKS_CACHE_TTL` | `5m` | duration | `2m` | TTL JWKS cache |
+| `INBOUND_OAUTH_JWKS_URL` | `""` | URL | `https://issuer/.well-known/jwks.json` | Enables JWT/JWKS mode |
+| `INBOUND_OAUTH_JWKS_CACHE_TTL` | `5m` | duration | `2m` | JWKS cache TTL |
 
-Проверки:
+Validations:
 
-- подпись JWT (`RS256`, `ES256`)
-- `iss`, `aud` (если заданы)
+- JWT signature (`RS256`, `ES256`)
+- `iss`, `aud` (if set)
 - `exp`, `nbf`
-- scopes в `scope`, `scp`, `permissions`
+- scopes in `scope`, `scp`, `permissions`
 
-### Introspection режим (RFC 7662)
+### Introspection Mode (RFC 7662)
 
-| ENV | Default | Формат | Пример | Влияние |
+| ENV | Default | Format | Example | Effect |
 |---|---|---|---|---|
-| `INBOUND_OAUTH_INTROSPECTION_URL` | `""` | URL | `https://issuer/oauth2/introspect` | включает introspection mode |
-| `INBOUND_OAUTH_CLIENT_ID` | `""` | string | `mcp-resource-server` | Basic auth к introspection |
-| `INBOUND_OAUTH_CLIENT_SECRET` | `""` | secret | `***` | Basic auth к introspection |
-| `INBOUND_OAUTH_INTROSPECTION_CACHE_TTL` | `45s` | duration | `30s` | TTL introspection cache |
+| `INBOUND_OAUTH_INTROSPECTION_URL` | `""` | URL | `https://issuer/oauth2/introspect` | Enables introspection mode |
+| `INBOUND_OAUTH_CLIENT_ID` | `""` | string | `mcp-resource-server` | Basic auth to introspection |
+| `INBOUND_OAUTH_CLIENT_SECRET` | `""` | secret | `***` | Basic auth to introspection |
+| `INBOUND_OAUTH_INTROSPECTION_CACHE_TTL` | `45s` | duration | `30s` | Introspection cache TTL |
 
-HTTP-коды:
+HTTP codes:
 
-- `401` — токен отсутствует/невалиден
-- `403` — токен валиден, но scope недостаточно
+- `401` — token is missing/invalid
+- `403` — token is valid but scope is insufficient
 
-## D) Upstream auth (MCP -> реальный API)
+## D) Upstream Auth (MCP -> Real API)
 
-| ENV | Default | Формат | Пример | Влияние |
+| ENV | Default | Format | Example | Effect |
 |---|---|---|---|---|
-| `UPSTREAM_AUTH_MODE` | `none` | `none\|oauth_client_credentials\|static_bearer\|api_key` | `oauth_client_credentials` | режим auth к upstream |
-| `UPSTREAM_BEARER_TOKEN` | `""` | token | `eyJ...` | static bearer token |
+| `UPSTREAM_AUTH_MODE` | `none` | `none\|oauth_client_credentials\|static_bearer\|api_key` | `oauth_client_credentials` | Auth mode to upstream |
+| `UPSTREAM_BEARER_TOKEN` | `""` | token | `eyJ...` | Static bearer token |
 | `UPSTREAM_API_KEY_HEADER` | `X-API-Key` | header | `X-API-Key` | API key header name |
 | `UPSTREAM_API_KEY_VALUE` | `""` | secret | `***` | API key value |
 | `UPSTREAM_OAUTH_TOKEN_URL` | `""` | URL | `https://issuer/oauth/token` | OAuth CC token URL |
@@ -544,56 +544,56 @@ HTTP-коды:
 | `UPSTREAM_OAUTH_CLIENT_SECRET` | `""` | secret | `***` | OAuth CC client secret |
 | `UPSTREAM_OAUTH_SCOPES` | `""` | space list | `read write` | OAuth CC scopes |
 | `UPSTREAM_OAUTH_AUDIENCE` | `""` | string | `api://upstream` | OAuth CC audience |
-| `UPSTREAM_OAUTH_TOKEN_CACHE_TTL` | `0` | duration | `50s` | override token cache TTL |
+| `UPSTREAM_OAUTH_TOKEN_CACHE_TTL` | `0` | duration | `50s` | Override token cache TTL |
 
 ## E) Policies / Guardrails
 
-| ENV | Default | Формат | Пример | Влияние |
+| ENV | Default | Format | Example | Effect |
 |---|---|---|---|---|
-| `MCP_API_MODE` | `plan_only` | `plan_only\|execute_readonly\|execute_write\|sandbox` | `execute_readonly` | режим выполнения execute |
-| `UPSTREAM_BASE_URL` | `""` | URL | `https://api.example.com` | override base URL |
-| `UPSTREAM_SANDBOX_BASE_URL` | `""` | URL | `https://staging-api.example.com` | sandbox base URL |
-| `UPSTREAM_ALLOWED_HOSTS` | `""` | csv | `api.example.com,staging-api.example.com` | allowlist hosts для upstream вызовов |
-| `BLOCK_PRIVATE_NETWORKS` | `true` | bool | `true` | блок private/loopback/link-local hosts и IP |
-| `ALLOWED_METHODS` | `GET,HEAD,OPTIONS` | csv | `GET,POST` | allowlist methods |
-| `DENIED_METHODS` | `DELETE` | csv | `DELETE,PATCH` | denylist methods |
-| `ALLOWED_OPERATION_IDS` | `""` | csv | `getUser,createOrder` | allowlist operationId |
-| `DENIED_OPERATION_IDS` | `""` | csv | `deleteUser` | denylist operationId |
+| `MCP_API_MODE` | `plan_only` | `plan_only\|execute_readonly\|execute_write\|sandbox` | `execute_readonly` | Execute execution mode |
+| `UPSTREAM_BASE_URL` | `""` | URL | `https://api.example.com` | Override base URL |
+| `UPSTREAM_SANDBOX_BASE_URL` | `""` | URL | `https://staging-api.example.com` | Sandbox base URL |
+| `UPSTREAM_ALLOWED_HOSTS` | `""` | csv | `api.example.com,staging-api.example.com` | Host allowlist for upstream calls |
+| `BLOCK_PRIVATE_NETWORKS` | `true` | bool | `true` | Block private/loopback/link-local hosts and IPs |
+| `ALLOWED_METHODS` | `GET,HEAD,OPTIONS` | csv | `GET,POST` | Methods allowlist |
+| `DENIED_METHODS` | `DELETE` | csv | `DELETE,PATCH` | Methods denylist |
+| `ALLOWED_OPERATION_IDS` | `""` | csv | `getUser,createOrder` | operationId allowlist |
+| `DENIED_OPERATION_IDS` | `""` | csv | `deleteUser` | operationId denylist |
 | `REQUIRE_CONFIRMATION_FOR_WRITE` | `false` | bool | `true` | write => confirmation_required |
-| `CONFIRMATION_TTL` | `10m` | duration | `15m` | TTL для confirmationId в flow подтверждения |
-| `VALIDATE_REQUEST` | `true` | bool | `true` | request validation |
-| `VALIDATE_RESPONSE` | `true` | bool | `true` | включает встроенную response validation внутри `swagger.http.execute` |
+| `CONFIRMATION_TTL` | `10m` | duration | `15m` | TTL for confirmationId in the confirmation flow |
+| `VALIDATE_REQUEST` | `true` | bool | `true` | Request validation |
+| `VALIDATE_RESPONSE` | `true` | bool | `true` | Enables built-in response validation inside `swagger.http.execute` |
 
 ## F) Limits / Timeouts
 
-| ENV | Default | Формат | Пример | Влияние |
+| ENV | Default | Format | Example | Effect |
 |---|---|---|---|---|
-| `MAX_CALLS_PER_MINUTE` | `60` | int | `120` | rate limit |
-| `MAX_CONCURRENT_CALLS` | `10` | int | `20` | concurrency limit |
-| `MAX_CALLS_PER_MINUTE_PER_PRINCIPAL` | `MAX_CALLS_PER_MINUTE` | int | `30` | rate limit на principal (`subject` из inbound OAuth, иначе `anonymous`) |
-| `MAX_CONCURRENT_CALLS_PER_PRINCIPAL` | `MAX_CONCURRENT_CALLS` | int | `5` | concurrency limit на principal (`subject` из inbound OAuth, иначе `anonymous`) |
-| `HTTP_TIMEOUT` | `30s` | duration | `15s` | upstream HTTP timeout |
-| `MAX_REQUEST_BYTES` | `1048576` | int64 | `524288` | request body limit |
-| `MAX_RESPONSE_BYTES` | `2097152` | int64 | `1048576` | response body limit |
-| `USER_AGENT` | `MCP-Swagger-Agent/1.0` | string | `MCP-Gateway/2.0` | upstream user-agent |
+| `MAX_CALLS_PER_MINUTE` | `60` | int | `120` | Rate limit |
+| `MAX_CONCURRENT_CALLS` | `10` | int | `20` | Concurrency limit |
+| `MAX_CALLS_PER_MINUTE_PER_PRINCIPAL` | `MAX_CALLS_PER_MINUTE` | int | `30` | Rate limit per principal (`subject` from inbound OAuth, otherwise `anonymous`) |
+| `MAX_CONCURRENT_CALLS_PER_PRINCIPAL` | `MAX_CONCURRENT_CALLS` | int | `5` | Concurrency limit per principal (`subject` from inbound OAuth, otherwise `anonymous`) |
+| `HTTP_TIMEOUT` | `30s` | duration | `15s` | Upstream HTTP timeout |
+| `MAX_REQUEST_BYTES` | `1048576` | int64 | `524288` | Request body limit |
+| `MAX_RESPONSE_BYTES` | `2097152` | int64 | `1048576` | Response body limit |
+| `USER_AGENT` | `MCP-Swagger-Agent/1.0` | string | `MCP-Gateway/2.0` | Upstream user-agent |
 
 ## G) Logging / Audit / Redaction
 
-| ENV | Default | Формат | Пример | Влияние |
+| ENV | Default | Format | Example | Effect |
 |---|---|---|---|---|
-| `AUDIT_LOG` | `true` | bool | `true` | включить audit |
-| `REDACT_HEADERS` | `Authorization,Cookie,X-API-Key` | csv | `Authorization,Cookie` | mask headers |
-| `REDACT_JSON_FIELDS` | `password,token,secret,apiKey,access_token,refresh_token` | csv | `password,secret` | mask json fields |
+| `AUDIT_LOG` | `true` | bool | `true` | Enable audit |
+| `REDACT_HEADERS` | `Authorization,Cookie,X-API-Key` | csv | `Authorization,Cookie` | Mask headers |
+| `REDACT_JSON_FIELDS` | `password,token,secret,apiKey,access_token,refresh_token` | csv | `password,secret` | Mask JSON fields |
 
 ## H) CORS
 
-| ENV | Default | Формат | Пример | Влияние |
+| ENV | Default | Format | Example | Effect |
 |---|---|---|---|---|
 | `CORS_ALLOWED_ORIGINS` | `""` | csv / `*` | `https://app.example.com` | CORS allowlist |
 
 ---
 
-## Запуск DEV/PROD
+## Running DEV/PROD
 
 ## DEV
 
@@ -649,13 +649,13 @@ go run ./cmd/mcp-server
 docker build -t mcp-swagger-gateway .
 ```
 
-Запуск с env file:
+Run with env file:
 
 ```bash
 docker run --rm -p 8080:8080 --env-file .env mcp-swagger-gateway
 ```
 
-### Пример `.env`
+### Example `.env`
 
 ```bash
 TRANSPORT=streamable
@@ -701,7 +701,7 @@ REDACT_HEADERS=Authorization,Cookie,X-API-Key
 REDACT_JSON_FIELDS=password,token,secret,apiKey
 ```
 
-## PROD: systemd (пример)
+## PROD: systemd (example)
 
 ```ini
 [Unit]
@@ -722,17 +722,17 @@ NoNewPrivileges=true
 WantedBy=multi-user.target
 ```
 
-## PROD: Kubernetes (коротко)
+## PROD: Kubernetes (brief)
 
 - readiness/liveness: `GET /healthz`
-- секреты (`INBOUND_OAUTH_CLIENT_SECRET`, `UPSTREAM_OAUTH_CLIENT_SECRET`, `UPSTREAM_API_KEY_VALUE`) хранить в `Secret`
-- для write-профилей: отдельный deployment и отдельные credentials
+- secrets (`INBOUND_OAUTH_CLIENT_SECRET`, `UPSTREAM_OAUTH_CLIENT_SECRET`, `UPSTREAM_API_KEY_VALUE`) should be stored in `Secret`
+- for write profiles: separate deployment and separate credentials
 
 ---
 
 ## MCP Resources ✅
 
-## Каталог ✅
+## Catalog ✅
 
 - `swagger:endpoints`
 - `swagger:endpoints:{METHOD}`
@@ -743,9 +743,9 @@ WantedBy=multi-user.target
 
 ## `swagger:endpoints` ✅
 
-Назначение: вернуть все resolved endpoints.
+Purpose: return all resolved endpoints.
 
-Пример:
+Example:
 
 ```json
 [
@@ -770,39 +770,39 @@ WantedBy=multi-user.target
 
 ## `swagger:endpoints:{METHOD}` ✅
 
-Пример: `swagger:endpoints:GET`
+Example: `swagger:endpoints:GET`
 
-Ответ: массив `ResolvedOperation` только для указанного метода.
+Response: array of `ResolvedOperation` for the specified method only.
 
 ## `swagger:endpointByOperationId:{operationId}` ✅
 
-Пример: `swagger:endpointByOperationId:getUserById`
+Example: `swagger:endpointByOperationId:getUserById`
 
-Ответ: один `ResolvedOperation`.
+Response: a single `ResolvedOperation`.
 
 ## `swagger:schema:{name}` ✅
 
-Пример: `swagger:schema:User`
+Example: `swagger:schema:User`
 
-Ответ: schema из `components.schemas.User`.
+Response: schema from `components.schemas.User`.
 
 ## `swagger:lookup:{pointer}` ✅
 
-Примеры pointer:
+Pointer examples:
 
 - `/components/schemas/User`
 - `/paths/~1users~1{id}/get`
 - URL encoded: `%2Fcomponents%2Fschemas%2FUser`
 
-Ответ: любой объект из Swagger.
+Response: any object from the Swagger spec.
 
 ## `docs:tool-schemas` ✅
 
-Назначение: формальные JSON Schema входа/выхода для MCP tools.
+Purpose: formal JSON Schema for MCP tool input/output.
 
 URI: `docs://tool-schemas`
 
-Ответ:
+Response:
 
 ```json
 {
@@ -817,9 +817,9 @@ URI: `docs://tool-schemas`
 }
 ```
 
-### Формат endpoint DTO
+### Endpoint DTO Format
 
-Поля (минимум):
+Fields (minimum):
 
 - method/baseURL/pathTemplate/urlTemplate/(optional)exampleURL/operationId
 - summary/description/tags/deprecated
@@ -828,21 +828,21 @@ URI: `docs://tool-schemas`
 - responses.success / responses.errors
 - security / servers
 
-### Что значит «вложенные схемы раскрыты» ⚠️
+### What "nested schemas are resolved" Means ⚠️
 
-- `$ref` раскрывается в JSON объект,
-- `allOf/oneOf/anyOf` сохраняются как структура, но вложенные `$ref` внутри раскрываются,
-- циклы обозначаются техническими маркерами (например `x-circularRef`).
+- `$ref` is resolved into a JSON object,
+- `allOf/oneOf/anyOf` are preserved as structure, but nested `$ref` inside them are resolved,
+- cycles are marked with technical markers (e.g., `x-circularRef`).
 
 ---
 
 ## Tool Schemas ✅
 
-- Канонический источник схем: `internal/tool/schemas.go`.
-- Публикация для агентов:
-  - через resource `docs:tool-schemas` (`docs://tool-schemas`);
-  - через `tools/list` (SDK получает `inputSchema` и `outputSchema`).
-- Покрытые tools:
+- Canonical source of schemas: `internal/tool/schemas.go`.
+- Publication for agents:
+  - via resource `docs:tool-schemas` (`docs://tool-schemas`);
+  - via `tools/list` (SDK gets `inputSchema` and `outputSchema`).
+- Covered tools:
   - `swagger.search`
   - `swagger.plan_call`
   - `swagger.http.generate_payload`
@@ -853,7 +853,7 @@ URI: `docs://tool-schemas`
   - `policy.request_confirmation`
   - `policy.confirm`
 
-Схема результата для swagger/policy tools унифицирована:
+Result schema for swagger/policy tools is unified:
 
 ```json
 {
@@ -876,7 +876,7 @@ URI: `docs://tool-schemas`
 
 ## MCP Tools ✅
 
-Единый JSON-контракт для всех `swagger.*` tools ✅:
+Unified JSON contract for all `swagger.*` tools ✅:
 
 ```json
 {
@@ -890,11 +890,11 @@ URI: `docs://tool-schemas`
 }
 ```
 
-`operationId` обязателен для `generate_payload`, `prepare_request`, `validate_request`, `execute`, `validate_response`.
-Для `search` и `plan_call` можно передавать фильтры в `params.query`.
-⚠️ Legacy-формат (`pathParams`, `queryParams`, `body`, `headers` на верхнем уровне) поддерживается как backward-compatible adapter.
+`operationId` is required for `generate_payload`, `prepare_request`, `validate_request`, `execute`, `validate_response`.
+For `search` and `plan_call`, filters can be passed in `params.query`.
+⚠️ Legacy format (`pathParams`, `queryParams`, `body`, `headers` at the top level) is supported as a backward-compatible adapter.
 
-Общий формат ответа:
+Common response format:
 
 ```json
 {
@@ -904,7 +904,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Ошибки:
+Errors:
 
 ```json
 {
@@ -918,7 +918,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Коды ошибок:
+Error codes:
 
 - `plan_only`
 - `policy_denied`
@@ -930,14 +930,14 @@ URI: `docs://tool-schemas`
 - `upstream_error`
 - `no_base_url`
 
-Для write-flow с `REQUIRE_CONFIRMATION_FOR_WRITE=true` доступны дополнительные tools:
+For write-flow with `REQUIRE_CONFIRMATION_FOR_WRITE=true`, additional tools are available:
 
 - `policy.request_confirmation`
 - `policy.confirm`
 
 ## `swagger.search` ✅
 
-Вход:
+Input:
 
 ```json
 {
@@ -955,7 +955,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Выход:
+Output:
 
 ```json
 {
@@ -979,31 +979,31 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Новые возможности `swagger.search`:
+New capabilities of `swagger.search`:
 
-- поиск endpoints по использованию схем (`schema: "User"`),
-- поиск endpoints по status code (`status: 404`) с акцентом на error responses,
-- `include` управляет секциями ответа:
-  - `endpoints` — ранжированный список операций,
-  - `schemas` — агрегаты по найденным схемам,
-  - `usage` — индексы использования schema/status.
+- search endpoints by schema usage (`schema: "User"`),
+- search endpoints by status code (`status: 404`) with emphasis on error responses,
+- `include` controls response sections:
+  - `endpoints` — ranked list of operations,
+  - `schemas` — aggregates for found schemas,
+  - `usage` — usage indexes for schema/status.
 
-Если в `params.headers` не передан `X-Correlation-Id` (или header из `CORRELATION_ID_HEADER`), tool добавляет его автоматически.
+If `X-Correlation-Id` (or the header from `CORRELATION_ID_HEADER`) is not passed in `params.headers`, the tool adds it automatically.
 
 ## `swagger.plan_call` ✅
 
-Вход:
+Input:
 
 ```json
 {
   "operationId":"getUserById",
   "params": {
-    "query": {"goal":"Получить пользователя"}
+    "query": {"goal":"Get a user"}
   }
 }
 ```
 
-Выход:
+Output:
 
 ```json
 {
@@ -1023,9 +1023,9 @@ URI: `docs://tool-schemas`
 
 ## `swagger.http.generate_payload` ✅
 
-Назначение: сгенерировать `params.body` по request body schema выбранной операции.
+Purpose: generate `params.body` from the request body schema of the selected operation.
 
-Вход:
+Input:
 
 ```json
 {
@@ -1042,16 +1042,16 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Где:
+Where:
 
 - `strategy`:
-  - `minimal` — только required-поля;
-  - `example` — предпочитает `example/examples`;
-  - `maximal` — старается заполнить больше полей.
-- `seed` — детерминирует генерацию значений.
-- `overrides` — патч поверх сгенерированного body.
+  - `minimal` — only required fields;
+  - `example` — prefers `example/examples`;
+  - `maximal` — tries to fill more fields.
+- `seed` — deterministic value generation.
+- `overrides` — patch on top of the generated body.
 
-Выход:
+Output:
 
 ```json
 {
@@ -1068,17 +1068,17 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Поведение генератора:
+Generator behavior:
 
-- заполняет required-поля;
-- учитывает `enum`, `minLength`, `minimum`, `format` (email/uuid/date/date-time/uri/ip);
-- поддерживает `object`, `array`, `primitive`;
-- для `oneOf/anyOf` выбирает вариант детерминированно и возвращает warning;
-- для `allOf` объединяет объектные части.
+- fills required fields;
+- accounts for `enum`, `minLength`, `minimum`, `format` (email/uuid/date/date-time/uri/ip);
+- supports `object`, `array`, `primitive`;
+- for `oneOf/anyOf`, selects a variant deterministically and returns a warning;
+- for `allOf`, merges object parts.
 
 ## `swagger.http.prepare_request` ✅
 
-Вход:
+Input:
 
 ```json
 {
@@ -1094,7 +1094,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Выход:
+Output:
 
 ```json
 {
@@ -1111,9 +1111,9 @@ URI: `docs://tool-schemas`
 
 ## `swagger.http.validate_request` ✅
 
-Вход: как `prepare_request`.
+Input: same as `prepare_request`.
 
-Выход:
+Output:
 
 ```json
 {
@@ -1129,7 +1129,7 @@ URI: `docs://tool-schemas`
 
 ## `swagger.http.execute` ✅
 
-Вход:
+Input:
 
 ```json
 {
@@ -1144,7 +1144,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Выход:
+Output:
 
 ```json
 {
@@ -1165,19 +1165,19 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Формат тела ответа (строгий):
+Response body format (strict):
 
 - `contentType: string`
 - `bodyEncoding: "json" | "text" | "base64"`
 - `body: any|string`
 
-Правила декодирования:
+Decoding rules:
 
-1. Если `Content-Type` содержит `json` или payload похож на JSON и успешно парсится -> `bodyEncoding=json`
-2. Иначе если payload валиден как UTF-8 текст -> `bodyEncoding=text`
-3. Иначе -> `bodyEncoding=base64`
+1. If `Content-Type` contains `json` or the payload looks like JSON and parses successfully -> `bodyEncoding=json`
+2. Otherwise if the payload is valid UTF-8 text -> `bodyEncoding=text`
+3. Otherwise -> `bodyEncoding=base64`
 
-Пример `text` ответа:
+`text` response example:
 
 ```json
 {
@@ -1192,7 +1192,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Пример бинарного ответа:
+Binary response example:
 
 ```json
 {
@@ -1207,28 +1207,28 @@ URI: `docs://tool-schemas`
 }
 ```
 
-### Порядок выполнения в `execute`
+### Execution Order in `execute`
 
-1. Получение endpoint по `operationId`
-2. Выбор baseURL (`sandbox` -> `UPSTREAM_SANDBOX_BASE_URL`, потом `UPSTREAM_BASE_URL`, потом `endpoint.baseURL`/`servers`)
+1. Get endpoint by `operationId`
+2. Select baseURL (`sandbox` -> `UPSTREAM_SANDBOX_BASE_URL`, then `UPSTREAM_BASE_URL`, then `endpoint.baseURL`/`servers`)
 3. Policy evaluate
-4. Request validation (если включено)
+4. Request validation (if enabled)
 5. Apply upstream auth
-6. HTTP call через constrained client
-7. Response read/decode с лимитами
-8. Response validation (если включено)
+6. HTTP call via constrained client
+7. Response read/decode with limits
+8. Response validation (if enabled)
 9. Audit log
 
-### Режимы `MCP_API_MODE`
+### `MCP_API_MODE` Modes
 
-- `plan_only`: execute запрещён
-- `execute_readonly`: обычно только GET/HEAD/OPTIONS
-- `execute_write`: write разрешается по policy
-- `sandbox`: принудительно sandbox base URL
+- `plan_only`: execute is forbidden
+- `execute_readonly`: typically only GET/HEAD/OPTIONS
+- `execute_write`: write is allowed per policy
+- `sandbox`: forced sandbox base URL
 
 ### `confirmation_required`
 
-Если `REQUIRE_CONFIRMATION_FOR_WRITE=true`, write-метод вернёт:
+If `REQUIRE_CONFIRMATION_FOR_WRITE=true`, a write method will return:
 
 ```json
 {
@@ -1248,15 +1248,15 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Далее используйте flow подтверждения:
+Then use the confirmation flow:
 
 1. `policy.request_confirmation`
 2. `policy.confirm` (approve=`true`)
-3. повторный `swagger.http.execute` с `confirmationId`
+3. retry `swagger.http.execute` with `confirmationId`
 
 ## `swagger.http.validate_response` ✅
 
-Вход:
+Input:
 
 ```json
 {
@@ -1269,7 +1269,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Выход:
+Output:
 
 ```json
 {
@@ -1287,13 +1287,13 @@ URI: `docs://tool-schemas`
 }
 ```
 
-`swagger.http.validate_response` использует тот же формат `contentType/bodyEncoding/body`, что и `swagger.http.execute`.
+`swagger.http.validate_response` uses the same `contentType/bodyEncoding/body` format as `swagger.http.execute`.
 
 ## `policy.request_confirmation` ✅
 
-Назначение: создать подтверждение для потенциально опасного write-вызова.
+Purpose: create a confirmation for a potentially dangerous write call.
 
-Вход:
+Input:
 
 ```json
 {
@@ -1307,7 +1307,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Выход:
+Output:
 
 ```json
 {
@@ -1328,9 +1328,9 @@ URI: `docs://tool-schemas`
 
 ## `policy.confirm` ✅
 
-Назначение: утвердить или отклонить ранее созданный confirmation request.
+Purpose: approve or reject a previously created confirmation request.
 
-Вход:
+Input:
 
 ```json
 {
@@ -1339,7 +1339,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Выход:
+Output:
 
 ```json
 {
@@ -1353,7 +1353,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Пример (`text`):
+Example (`text`):
 
 ```json
 {
@@ -1370,7 +1370,7 @@ URI: `docs://tool-schemas`
 }
 ```
 
-Пример (`base64`):
+Example (`base64`):
 
 ```json
 {
@@ -1387,22 +1387,22 @@ URI: `docs://tool-schemas`
 }
 ```
 
-### Семантика `execute` vs `validate_response`
+### Semantics of `execute` vs `validate_response`
 
-Принято поведение (Вариант A):
+Adopted behavior (Option A):
 
 - `swagger.http.execute`:
-  - выполняет реальный HTTP вызов;
-  - если `VALIDATE_RESPONSE=true`, делает встроенную проверку ответа и кладёт результат в `data.responseValidation`;
-  - **не падает** из-за mismatch контракта (то есть `ok` остаётся `true`, а несоответствия идут в `responseValidation.errors`).
+  - performs the actual HTTP call;
+  - if `VALIDATE_RESPONSE=true`, performs built-in response validation and puts the result in `data.responseValidation`;
+  - **does not fail** due to contract mismatch (i.e., `ok` remains `true`, and mismatches go into `responseValidation.errors`).
 - `swagger.http.validate_response`:
-  - отдельный инструмент для явной/повторной проверки уже полученного ответа;
-  - возвращает нормализованное тело (`contentType/bodyEncoding/body`) + результат валидации (`valid/errors`) и не выполняет HTTP вызов.
+  - a separate tool for explicit/repeated validation of an already received response;
+  - returns a normalized body (`contentType/bodyEncoding/body`) + validation result (`valid/errors`) and does not perform an HTTP call.
 
-Когда использовать:
+When to use:
 
-- нужен реальный вызов API + диагностика расхождений: `swagger.http.execute`;
-- нужно перепроверить/сравнить ответ отдельно (например после пост-обработки тела): `swagger.http.validate_response`.
+- need a real API call + mismatch diagnostics: `swagger.http.execute`;
+- need to recheck/compare a response separately (e.g., after post-processing the body): `swagger.http.validate_response`.
 
 ---
 
@@ -1410,114 +1410,114 @@ URI: `docs://tool-schemas`
 
 ## `swagger.call_agent` ✅
 
-Назначение: задаёт безопасный workflow агенту.
+Purpose: sets up a safe workflow for the agent.
 
-Текущий workflow в шаблоне (5 шагов):
+Current workflow in the template (5 steps):
 
-1. Уточнить цель пользователя и риск.
-2. Найти операции (`swagger.search`).
-3. Спланировать вызов (`swagger.plan_call`).
-4. Подготовить запрос (`swagger.http.prepare_request`).
-5. Проверить запрос (`swagger.http.validate_request`), выполнить вызов (`swagger.http.execute`) и проверить ответ (`swagger.http.validate_response`).
+1. Clarify the user's goal and risk.
+2. Find operations (`swagger.search`).
+3. Plan the call (`swagger.plan_call`).
+4. Prepare the request (`swagger.http.prepare_request`).
+5. Validate the request (`swagger.http.validate_request`), execute the call (`swagger.http.execute`) and validate the response (`swagger.http.validate_response`).
 
-⚠️ Шаблон `swagger.call_agent` по умолчанию не вставляет отдельный шаг `policy.request_confirmation`/`policy.confirm`; для write-сценариев агент должен добавить этот flow самостоятельно.
+⚠️ The `swagger.call_agent` template does not insert a separate `policy.request_confirmation`/`policy.confirm` step by default; for write scenarios, the agent must add this flow on its own.
 
-Псевдо-диалог:
+Pseudo-dialog:
 
 ```text
 Agent -> swagger.search(...)
 Agent -> swagger.plan_call(...)
 Agent -> swagger.http.prepare_request(...)
 Agent -> swagger.http.validate_request(...)
-Agent -> policy.request_confirmation(...) [опционально для write]
-Agent -> policy.confirm(...) [опционально для write]
+Agent -> policy.request_confirmation(...) [optional for write]
+Agent -> policy.confirm(...) [optional for write]
 Agent -> swagger.http.execute(...)
 Agent -> swagger.http.validate_response(...)
 ```
 
 ---
 
-## Безопасность и Guardrails ✅
+## Security and Guardrails ✅
 
-### Почему execute опасен без ограничений
+### Why Execute Is Dangerous Without Restrictions
 
-Риски:
+Risks:
 
 - data exfiltration,
-- массовые write-операции,
-- утечки секретов в логах,
-- destructive действия без контроля.
+- mass write operations,
+- secret leakage in logs,
+- destructive actions without control.
 
-### Рекомендации для production
+### Production Recommendations
 
-1. Default держать `plan_only`.
-2. Для read use-case: `execute_readonly`.
-3. Для write:
-   - `ALLOWED_OPERATION_IDS` обязателен,
-   - `DENIED_METHODS=DELETE` по умолчанию,
+1. Keep `plan_only` as default.
+2. For read use-case: `execute_readonly`.
+3. For write:
+   - `ALLOWED_OPERATION_IDS` is mandatory,
+   - `DENIED_METHODS=DELETE` by default,
    - `REQUIRE_CONFIRMATION_FOR_WRITE=true`.
-4. Разделяйте inbound и outbound credentials.
-5. Включайте audit + redaction.
-6. Включайте rate/concurrency/size лимиты.
-7. Для тестов включайте `sandbox`.
+4. Separate inbound and outbound credentials.
+5. Enable audit + redaction.
+6. Enable rate/concurrency/size limits.
+7. For tests, enable `sandbox`.
 
-### Приоритеты Policy (детерминированный порядок) ✅
+### Policy Priorities (deterministic order) ✅
 
-Порядок принятия решения в `internal/policy`:
+Decision order in `internal/policy`:
 
-| Шаг | Проверка | Результат при срабатывании |
+| Step | Check | Result on trigger |
 |---|---|---|
 | 1 | `DENIED_OPERATION_IDS` | deny: `policy_denied` |
 | 2 | `DENIED_METHODS` | deny: `policy_denied` |
-| 3 | `ALLOWED_OPERATION_IDS` (если задан) | если `operationId` не в allowlist -> deny |
-| 4 | `ALLOWED_METHODS` (если задан) | если method не в allowlist -> deny |
+| 3 | `ALLOWED_OPERATION_IDS` (if set) | if `operationId` not in allowlist -> deny |
+| 4 | `ALLOWED_METHODS` (if set) | if method not in allowlist -> deny |
 | 5 | `MCP_API_MODE` | `plan_only` -> deny `plan_only`; `execute_readonly` -> deny write-methods; `execute_write/sandbox` -> pass |
-| 6 | `REQUIRE_CONFIRMATION_FOR_WRITE` | для write-methods -> deny `confirmation_required` |
+| 6 | `REQUIRE_CONFIRMATION_FOR_WRITE` | for write-methods -> deny `confirmation_required` |
 
-Примечания:
+Notes:
 
-- deny-правила всегда перекрывают allow-правила.
-- allowlist по `operationId` ограничивает вызовы только перечисленными операциями.
-- `execute_readonly` дополнительно ограничивает методы до `GET/HEAD/OPTIONS`, даже если `ALLOWED_METHODS` шире.
+- deny rules always override allow rules.
+- allowlist by `operationId` restricts calls to only the listed operations.
+- `execute_readonly` additionally restricts methods to `GET/HEAD/OPTIONS`, even if `ALLOWED_METHODS` is broader.
 
-Примеры:
+Examples:
 
-1. `DENIED_OPERATION_IDS=createUser`, `ALLOWED_OPERATION_IDS=createUser`, method=`POST`  
-   результат: deny на шаге 1 (`operationId explicitly denied`).
-2. `DENIED_METHODS=POST`, `ALLOWED_METHODS=POST`, mode=`execute_write`  
-   результат: deny на шаге 2 (`HTTP method explicitly denied`).
-3. mode=`execute_readonly`, `ALLOWED_METHODS=POST`, method=`POST`  
-   результат: deny на шаге 5 (readonly mode запрет write).
-4. mode=`execute_write`, `REQUIRE_CONFIRMATION_FOR_WRITE=true`, method=`POST`  
-   результат: deny на шаге 6 (`confirmation_required`).
+1. `DENIED_OPERATION_IDS=createUser`, `ALLOWED_OPERATION_IDS=createUser`, method=`POST`
+   result: deny at step 1 (`operationId explicitly denied`).
+2. `DENIED_METHODS=POST`, `ALLOWED_METHODS=POST`, mode=`execute_write`
+   result: deny at step 2 (`HTTP method explicitly denied`).
+3. mode=`execute_readonly`, `ALLOWED_METHODS=POST`, method=`POST`
+   result: deny at step 5 (readonly mode blocks write).
+4. mode=`execute_write`, `REQUIRE_CONFIRMATION_FOR_WRITE=true`, method=`POST`
+   result: deny at step 6 (`confirmation_required`).
 
-### Мини-модель угроз
+### Mini Threat Model
 
-- Prompt injection через Swagger descriptions
-- SSRF через base URL override
+- Prompt injection via Swagger descriptions
+- SSRF via base URL override
 - Credential leakage
 - Mass-write
 
-Контрмеры: policy, auth split, allow/deny, sandbox, audit/redaction, лимиты.
+Countermeasures: policy, auth split, allow/deny, sandbox, audit/redaction, limits.
 
-### SSRF защита и allowlist хостов ✅
+### SSRF Protection and Host Allowlist ✅
 
-Реализованы два уровня защиты:
+Two levels of protection are implemented:
 
-1. **Fail-fast на старте**:
-   - валидируются `UPSTREAM_BASE_URL`, `UPSTREAM_SANDBOX_BASE_URL`, `SWAGGER_BASE_URL`,
-   - если `SWAGGER_PATH` это URL — валидируется host,
-   - после загрузки Swagger валидируются `servers`/`baseURL` всех операций.
-2. **Defense-in-depth перед каждым `swagger.http.execute`**:
-   - повторно валидируется выбранный `baseURL`,
-   - валидируется итоговый `finalURL`,
-   - редиректы разрешены только если target URL проходит ту же проверку host policy.
-3. **Безопасная загрузка Swagger по URL**:
-   - поддерживаются только `http/https`,
-   - редиректы ограничены (`max 5`) и каждый hop валидируется через policy,
-   - применяются `SWAGGER_HTTP_TIMEOUT` и `SWAGGER_MAX_BYTES`.
+1. **Fail-fast at startup**:
+   - `UPSTREAM_BASE_URL`, `UPSTREAM_SANDBOX_BASE_URL`, `SWAGGER_BASE_URL` are validated,
+   - if `SWAGGER_PATH` is a URL — the host is validated,
+   - after loading Swagger, `servers`/`baseURL` of all operations are validated.
+2. **Defense-in-depth before each `swagger.http.execute`**:
+   - the selected `baseURL` is re-validated,
+   - the final `finalURL` is validated,
+   - redirects are allowed only if the target URL passes the same host policy check.
+3. **Safe Swagger loading via URL**:
+   - only `http/https` are supported,
+   - redirects are limited (`max 5`) and each hop is validated through policy,
+   - `SWAGGER_HTTP_TIMEOUT` and `SWAGGER_MAX_BYTES` are applied.
 
-Пример production-настройки:
+Production configuration example:
 
 ```bash
 SWAGGER_PATH=https://specs.example.com/openapi.yaml
@@ -1529,22 +1529,22 @@ UPSTREAM_ALLOWED_HOSTS=api.example.com,staging-api.example.com
 BLOCK_PRIVATE_NETWORKS=true
 ```
 
-Рекомендуется:
+Recommendations:
 
-- задавать явные allowlist’ы для Swagger и upstream отдельно,
-- не использовать wildcard `*` для host allowlist,
-- держать `BLOCK_PRIVATE_NETWORKS=true` в production.
+- set explicit allowlists for Swagger and upstream separately,
+- do not use wildcard `*` for host allowlist,
+- keep `BLOCK_PRIVATE_NETWORKS=true` in production.
 
 ---
 
 ## Observability
 
-Что логируется:
+What is logged:
 
-- ✅ сервисные логи (`slog`)
-- ✅ audit записи execute
+- ✅ service logs (`slog`)
+- ✅ audit records for execute
 
-Пример audit-события:
+Audit event example:
 
 ```json
 {
@@ -1563,35 +1563,35 @@ BLOCK_PRIVATE_NETWORKS=true
 
 Correlation ID:
 
-- ✅ streamable middleware генерирует correlation id (UUID), если входящий header отсутствует
-- ✅ correlation id кладётся в context и возвращается в HTTP response header
-- ✅ `swagger.http.execute` прокидывает correlation id в upstream request header (если `params.headers` не содержит его)
-- ✅ audit-событие включает поле `correlationId`
-- ✅ в stdio-режиме `swagger.http.execute` генерирует correlation id на каждый вызов, если он не передан явно
+- ✅ streamable middleware generates a correlation id (UUID) if the incoming header is absent
+- ✅ correlation id is placed in context and returned in the HTTP response header
+- ✅ `swagger.http.execute` propagates the correlation id to the upstream request header (if `params.headers` does not contain it)
+- ✅ the audit event includes the `correlationId` field
+- ✅ in stdio mode, `swagger.http.execute` generates a correlation id for each call if not explicitly provided
 
-Метрики:
+Metrics:
 
 - ✅ endpoint: `GET /metrics`
-- ✅ метрики:
+- ✅ metrics:
   - `mcp_execute_total{operationId,method,status}`
   - `mcp_execute_errors_total{code}`
   - `mcp_execute_duration_seconds_bucket` (histogram buckets)
   - `mcp_execute_inflight`
   - `mcp_rate_limited_total`
 
-Пример запроса:
+Request example:
 
 ```bash
 curl -s http://127.0.0.1:8080/metrics | head -n 40
 ```
 
-Если `METRICS_AUTH_REQUIRED=true`:
+If `METRICS_AUTH_REQUIRED=true`:
 
 ```bash
 curl -s -H "Authorization: Bearer <token>" http://127.0.0.1:8080/metrics | head -n 40
 ```
 
-Пример scrape-конфига Prometheus:
+Prometheus scrape config example:
 
 ```yaml
 scrape_configs:
@@ -1601,20 +1601,20 @@ scrape_configs:
       - targets: ["mcp-swagger-gateway:8080"]
 ```
 
-⚠️ При `METRICS_AUTH_REQUIRED=false` публикуйте `/metrics` только во внутренней/private сети.
+⚠️ When `METRICS_AUTH_REQUIRED=false`, expose `/metrics` only on an internal/private network.
 
 ---
 
 ## Roadmap
 
-- 🧭 Расширение интеграционных тестов streamable (`GET /mcp`, `DELETE /mcp`, CORS preflight сценарии).
-- 🧭 Более глубокая нормализация OpenAPI-композиций (`allOf/oneOf/anyOf`) с опциональным merge режимом.
+- 🧭 Expand integration tests for streamable (`GET /mcp`, `DELETE /mcp`, CORS preflight scenarios).
+- 🧭 Deeper normalization of OpenAPI compositions (`allOf/oneOf/anyOf`) with an optional merge mode.
 
 ---
 
 ## FAQ / Troubleshooting
 
-## Swagger не парсится
+## Swagger Does Not Parse
 
 ```bash
 ls -la ./openapi.yaml
@@ -1622,89 +1622,89 @@ curl -I https://example.com/openapi.yaml
 export SWAGGER_FORMAT=yaml
 ```
 
-Проверить source type:
+Check source type:
 
-- локальный файл: `SWAGGER_PATH=./openapi.yaml`;
-- URL: только `http://`/`https://` (`file://` отклоняется).
+- local file: `SWAGGER_PATH=./openapi.yaml`;
+- URL: only `http://`/`https://` (`file://` is rejected).
 
-Если `SWAGGER_PATH` URL:
+If `SWAGGER_PATH` is a URL:
 
-- проверить `SWAGGER_ALLOWED_HOSTS`,
-- проверить `BLOCK_PRIVATE_NETWORKS`,
-- проверить `SWAGGER_HTTP_TIMEOUT`,
-- проверить `SWAGGER_MAX_BYTES` (если spec большая).
+- check `SWAGGER_ALLOWED_HOSTS`,
+- check `BLOCK_PRIVATE_NETWORKS`,
+- check `SWAGGER_HTTP_TIMEOUT`,
+- check `SWAGGER_MAX_BYTES` (if the spec is large).
 
 ## `no_base_url`
 
 ```bash
 export UPSTREAM_BASE_URL=https://api.example.com
-# или для sandbox
+# or for sandbox
 export MCP_API_MODE=sandbox
 export UPSTREAM_SANDBOX_BASE_URL=https://staging-api.example.com
 ```
 
-## 401/403 на `/mcp`
+## 401/403 on `/mcp`
 
-Проверить inbound OAuth:
+Check inbound OAuth:
 
-- `INBOUND_OAUTH_*` параметры
+- `INBOUND_OAUTH_*` parameters
 - issuer/audience/scopes
-- валидность bearer токена
+- bearer token validity
 
-## 401/403 на upstream API
+## 401/403 on Upstream API
 
-Проверить outbound auth:
+Check outbound auth:
 
 - `UPSTREAM_AUTH_MODE`
-- `UPSTREAM_OAUTH_*` или `UPSTREAM_API_KEY_*` / `UPSTREAM_BEARER_TOKEN`
+- `UPSTREAM_OAUTH_*` or `UPSTREAM_API_KEY_*` / `UPSTREAM_BEARER_TOKEN`
 
-## Response validation errors
+## Response Validation Errors
 
-`execute` может быть успешным, но `responseValidation.valid=false`.
+`execute` may succeed, but `responseValidation.valid=false`.
 
-Это сигнал рассинхрона Swagger и реального API.
+This signals a desynchronization between Swagger and the real API.
 
-## Timeout / response too large
+## Timeout / Response Too Large
 
-- увеличить `HTTP_TIMEOUT`
-- увеличить `MAX_RESPONSE_BYTES`
-- проверить размер ответа endpoint
+- increase `HTTP_TIMEOUT`
+- increase `MAX_RESPONSE_BYTES`
+- check the response size of the endpoint
 
 ## `policy_denied`: host blocked by security policy
 
-Причина: URL/host не проходит SSRF guardrails.
+Cause: URL/host does not pass SSRF guardrails.
 
-Проверьте:
+Check:
 
-- `UPSTREAM_ALLOWED_HOSTS` (для `execute`) и/или `SWAGGER_ALLOWED_HOSTS` (для `SWAGGER_PATH` URL),
-- `BLOCK_PRIVATE_NETWORKS=true` блокирует `127.0.0.1`, RFC1918 и link-local сети,
-- редирект целевого API ведёт на разрешённый host.
+- `UPSTREAM_ALLOWED_HOSTS` (for `execute`) and/or `SWAGGER_ALLOWED_HOSTS` (for `SWAGGER_PATH` URL),
+- `BLOCK_PRIVATE_NETWORKS=true` blocks `127.0.0.1`, RFC1918 and link-local networks,
+- the target API redirect leads to an allowed host.
 
-## Ошибки загрузки `SWAGGER_PATH` по URL
+## Errors Loading `SWAGGER_PATH` via URL
 
-Типовые причины:
+Common causes:
 
-- `unsupported swagger URL scheme`: задана схема не `http/https` (например `file://`);
-- `swagger url blocked by policy`: host не проходит `SWAGGER_ALLOWED_HOSTS` / private-network policy;
-- `swagger redirect blocked by policy`: redirect target не проходит ту же host policy;
-- `too many redirects while fetching swagger`: превышен лимит redirect hops (5);
-- `swagger payload exceeds configured size limit`: превышен `SWAGGER_MAX_BYTES`.
+- `unsupported swagger URL scheme`: a scheme other than `http/https` was specified (e.g., `file://`);
+- `swagger url blocked by policy`: host does not pass `SWAGGER_ALLOWED_HOSTS` / private-network policy;
+- `swagger redirect blocked by policy`: redirect target does not pass the same host policy;
+- `too many redirects while fetching swagger`: redirect hop limit (5) exceeded;
+- `swagger payload exceeds configured size limit`: `SWAGGER_MAX_BYTES` exceeded.
 
 ## `confirmation_required`
 
-Это guardrail для write.
+This is a guardrail for write operations.
 
-Безопасный путь:
+Safe path:
 
-1. Вызвать `policy.request_confirmation`.
-2. Получить подтверждение человека и вызвать `policy.confirm` с `approve=true`.
-3. Повторить `swagger.http.execute`, передав `confirmationId`.
+1. Call `policy.request_confirmation`.
+2. Get human confirmation and call `policy.confirm` with `approve=true`.
+3. Retry `swagger.http.execute`, passing `confirmationId`.
 
 ---
 
-## Hands-on сценарии
+## Hands-on Scenarios
 
-## 1) Найти endpoint -> подготовить -> валидировать -> выполнить GET
+## 1) Find Endpoint -> Prepare -> Validate -> Execute GET
 
 ```json
 {"tool":"swagger.search","arguments":{"params":{"query":{"query":"user by id","method":"GET"}}}}
@@ -1722,7 +1722,7 @@ export UPSTREAM_SANDBOX_BASE_URL=https://staging-api.example.com
 {"tool":"swagger.http.execute","arguments":{"operationId":"getUserById","params":{"path":{"id":"123"}}}}
 ```
 
-## 2) Write endpoint -> confirmation_required -> confirm -> execute
+## 2) Write Endpoint -> confirmation_required -> confirm -> execute
 
 ```bash
 export MCP_API_MODE=execute_write
@@ -1734,31 +1734,31 @@ export CONFIRMATION_TTL=10m
 {"tool":"swagger.http.execute","arguments":{"operationId":"createUser","params":{"body":{"email":"new@example.com"}}}}
 ```
 
-Ожидаемо:
+Expected:
 
 ```json
 {"ok":false,"data":null,"error":{"code":"confirmation_required"}}
 ```
 
-Создаём confirmation request:
+Create a confirmation request:
 
 ```json
 {"tool":"policy.request_confirmation","arguments":{"operationId":"createUser","reason":"method \"POST\" requires explicit user confirmation","preparedRequestSummary":{"operationId":"createUser","method":"POST","finalURL":"https://api.example.com/users"}}}
 ```
 
-Подтверждаем:
+Confirm:
 
 ```json
 {"tool":"policy.confirm","arguments":{"confirmationId":"<id-from-previous-step>","approve":true}}
 ```
 
-Повторяем execute с `confirmationId`:
+Retry execute with `confirmationId`:
 
 ```json
 {"tool":"swagger.http.execute","arguments":{"operationId":"createUser","confirmationId":"<id-from-previous-step>","params":{"body":{"email":"new@example.com"}}}}
 ```
 
-## 3) Sandbox режим
+## 3) Sandbox Mode
 
 ```bash
 export MCP_API_MODE=sandbox
@@ -1769,9 +1769,9 @@ export UPSTREAM_SANDBOX_BASE_URL=https://staging-api.example.com
 {"tool":"swagger.http.execute","arguments":{"operationId":"getUserById","params":{"path":{"id":"123"}}}}
 ```
 
-URL в ответе должен быть sandbox.
+The URL in the response should be the sandbox one.
 
-## 4) Найти schema и собрать payload
+## 4) Find Schema and Build Payload
 
 ```json
 {"resource":"swagger:schema:UserCreateRequest"}
@@ -1795,7 +1795,7 @@ URL в ответе должен быть sandbox.
 {"tool":"swagger.http.generate_payload","arguments":{"operationId":"createUser","params":{"query":{"strategy":"minimal","seed":42}}}}
 ```
 
-Пример сокращённого ответа:
+Shortened response example:
 
 ```json
 {"ok":true,"data":{"body":{"name":"value-72305","role":"admin"},"warnings":[]}}
@@ -1811,7 +1811,7 @@ URL в ответе должен быть sandbox.
 
 ---
 
-## Команды
+## Commands
 
 ```bash
 make tidy
