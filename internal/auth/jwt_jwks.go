@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rsa"
@@ -209,7 +210,9 @@ func (v *JWTJWKSValidator) refreshJWKS(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("jwks endpoint returned status %d", resp.StatusCode)
@@ -311,7 +314,13 @@ func parseECPublicKey(crvRaw, xRaw, yRaw string) (*ecdsa.PublicKey, error) {
 	curve := elliptic.P256()
 	x := new(big.Int).SetBytes(xBytes)
 	y := new(big.Int).SetBytes(yBytes)
-	if !curve.IsOnCurve(x, y) {
+
+	byteLen := (curve.Params().BitSize + 7) / 8
+	rawPoint := make([]byte, 1+2*byteLen)
+	rawPoint[0] = 0x04
+	x.FillBytes(rawPoint[1 : 1+byteLen])
+	y.FillBytes(rawPoint[1+byteLen:])
+	if _, err := ecdh.P256().NewPublicKey(rawPoint); err != nil {
 		return nil, errors.New("ec point is not on curve")
 	}
 	return &ecdsa.PublicKey{Curve: curve, X: x, Y: y}, nil

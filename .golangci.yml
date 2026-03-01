@@ -1,14 +1,16 @@
+version: "2"
+
 run:
-  timeout: 3m
+    timeout: 3m
 
 linters:
-  enable:
-    - errcheck
-    - govet
-    - ineffassign
-    - revive
-    - staticcheck
+    enable:
+        - errcheck
+        - govet
+        - ineffassign
+        - revive
+        - staticcheck
 
 issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
+    max-issues-per-linter: 0
+    max-same-issues: 0

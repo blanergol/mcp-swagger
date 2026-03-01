@@ -196,7 +196,9 @@ func (l *FileLoader) Load(_ context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read swagger file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	if info, statErr := file.Stat(); statErr == nil && info.Size() > l.maxBytes {
 		return nil, fmt.Errorf("swagger payload exceeds configured size limit (%d bytes)", l.maxBytes)
@@ -273,7 +275,9 @@ func (l *HTTPLoader) Load(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetch swagger url: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return nil, fmt.Errorf("swagger url returned status %d", resp.StatusCode)

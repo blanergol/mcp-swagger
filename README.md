@@ -25,6 +25,15 @@ export MCP_API_MODE=plan_only
 make run
 ```
 
+Тот же запуск через CLI-аргументы:
+
+```bash
+go run ./cmd/mcp-server \
+  --transport=stdio \
+  --swagger-path=./openapi.yaml \
+  --mcp-api-mode=plan_only
+```
+
 3. Запуск с `SWAGGER_PATH` как URL (production-safe):
 
 ```bash
@@ -206,6 +215,8 @@ Clients/Agents
 
 ```bash
 TRANSPORT=stdio SWAGGER_PATH=./openapi.yaml go run ./cmd/mcp-server
+# или через флаги
+go run ./cmd/mcp-server --transport=stdio --swagger-path=./openapi.yaml
 ```
 
 Пример subprocess (Python):
@@ -381,6 +392,47 @@ curl -sS -i \
 ---
 
 ## Конфигурация (ENV)
+
+### CLI аргументы
+
+Сервер можно запускать как CLI-инструмент и передавать конфиг через флаги.
+
+```bash
+go run ./cmd/mcp-server \
+  --transport=stdio \
+  --swagger-path=./openapi.yaml \
+  --mcp-api-mode=plan_only
+```
+
+Поддерживаемые именованные флаги:
+
+- `--transport`
+- `--http-addr`
+- `--version`
+- `--log-level`
+- `--swagger-path`
+- `--swagger-format`
+- `--swagger-base-url`
+- `--swagger-reload`
+- `--mcp-api-mode`
+- `--upstream-base-url`
+- `--upstream-sandbox-base-url`
+
+Для любого параметра из ENV-таблиц используйте repeatable `--set KEY=VALUE`:
+
+```bash
+go run ./cmd/mcp-server \
+  --swagger-path=https://specs.example.com/openapi.yaml \
+  --set SWAGGER_ALLOWED_HOSTS=specs.example.com \
+  --set BLOCK_PRIVATE_NETWORKS=true \
+  --set INBOUND_OAUTH_JWKS_URL=https://issuer.example.com/.well-known/jwks.json
+```
+
+Приоритет источников конфигурации:
+
+1. ENV
+2. `--set KEY=VALUE`
+3. Именованные CLI-флаги
 
 Важно: inbound и outbound OAuth конфиги теперь независимы:
 

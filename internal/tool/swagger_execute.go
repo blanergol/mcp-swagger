@@ -341,7 +341,9 @@ func (t *SwaggerExecuteTool) Execute(ctx context.Context, input any) (any, error
 		}
 		return fail("network_error", err.Error(), nil)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	auditEntry.ResponseStatus = resp.StatusCode
 	auditEntry.ResponseHeaders = flattenHTTPHeaders(resp.Header)

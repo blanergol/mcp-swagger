@@ -53,7 +53,8 @@ func FuzzValidateURLNoPanic(f *testing.F) {
 		err := guard.ValidateURL(ctx, raw)
 		if err == nil {
 			trimmed := strings.TrimSpace(raw)
-			if !(strings.HasPrefix(strings.ToLower(trimmed), "http://") || strings.HasPrefix(strings.ToLower(trimmed), "https://")) {
+			lowerTrimmed := strings.ToLower(trimmed)
+			if !strings.HasPrefix(lowerTrimmed, "http://") && !strings.HasPrefix(lowerTrimmed, "https://") {
 				t.Fatalf("ValidateURL accepted non-http input %q", raw)
 			}
 		}

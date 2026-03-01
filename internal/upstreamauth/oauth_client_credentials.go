@@ -150,7 +150,9 @@ func (p *OAuthClientCredentialsProvider) fetchToken(ctx context.Context) (string
 	if err != nil {
 		return "", 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		payload, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))

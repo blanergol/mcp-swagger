@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -35,7 +36,14 @@ import (
 
 // main инициализирует зависимости, валидирует конфигурацию и запускает выбранный транспорт сервера.
 func main() {
-	cfg := config.Load()
+	cfg, err := loadConfigFromArgs(os.Args[1:])
+	if err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return
+		}
+		log.Fatal(err)
+	}
+
 	configureLogger(cfg.LogLevel)
 	for _, warning := range cfg.CompatibilityWarnings {
 		slog.Warn("legacy oauth env fallback in use", "warning", warning)
