@@ -6,11 +6,13 @@ RUN go mod download
 
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/mcp-server ./cmd/mcp-server
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/healthcheck ./cmd/healthcheck
 
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 
 COPY --from=builder /out/mcp-server /app/mcp-server
+COPY --from=builder /out/healthcheck /app/healthcheck
 
 ENV TRANSPORT=streamable
 ENV HTTP_ADDR=:8080

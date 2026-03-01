@@ -70,6 +70,39 @@ make run
 curl -s http://127.0.0.1:8080/healthz
 ```
 
+### Docker Compose
+
+1. Скопируйте пример env-файла и заполните значения:
+
+```bash
+cp .env.example .env
+# отредактируйте .env — задайте SWAGGER_PATH, INBOUND_OAUTH_JWKS_URL и т.д.
+```
+
+2. Соберите и запустите:
+
+```bash
+docker compose up --build -d
+```
+
+3. Убедитесь, что сервис работает:
+
+```bash
+docker compose ps          # STATUS должен показывать (healthy)
+curl -s http://127.0.0.1:8080/healthz
+```
+
+4. Просмотр логов / остановка:
+
+```bash
+docker compose logs -f
+docker compose down
+```
+
+Контейнер использует транспорт `streamable` на порту `8080` по умолчанию.
+Переопределить хост-порт можно через `HTTP_PORT` в `.env`.
+Вся конфигурация передаётся через переменные окружения — полный список см. в `.env.example`.
+
 ---
 
 ## Статус реализации (аудит по коду)
@@ -95,6 +128,7 @@ curl -s http://127.0.0.1:8080/healthz
 
 ## Table of Contents
 
+- [Docker Compose](#docker-compose)
 - [Статус реализации (аудит по коду)](#статус-реализации-аудит-по-коду)
 - [Что это и зачем](#что-это-и-зачем)
 - [Архитектура](#архитектура)
