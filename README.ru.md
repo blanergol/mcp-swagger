@@ -1,5 +1,7 @@
 # MCP Swagger Gateway (Go)
 
+> [English](README.md) | **Русский**
+
 MCP-сервер на Go, который:
 
 - загружает Swagger/OpenAPI (JSON/YAML, файл или URL),
