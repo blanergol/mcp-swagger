@@ -134,6 +134,7 @@ func TestValidateResponseBodyEncoding(t *testing.T) {
 			if valid, _ := data["valid"].(bool); !valid {
 				t.Fatalf("expected valid=true, got data=%#v", data)
 			}
+			assertEmptyArrayValue(t, data["errors"], "errors")
 		})
 	}
 }

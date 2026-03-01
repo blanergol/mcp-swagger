@@ -90,6 +90,7 @@ func TestGeneratePayloadExampleStrategyUsesExample(t *testing.T) {
 	if body["priority"] != float64(3) {
 		t.Fatalf("expected schema example priority=3, got %#v", body["priority"])
 	}
+	assertEmptyArrayValue(t, result["warnings"], "warnings")
 }
 
 // TestGeneratePayloadPrimitiveAndArray проверяет ожидаемое поведение в тестовом сценарии.

@@ -42,7 +42,7 @@ func (s *MemoryStore) Request(_ context.Context, req Request) (Record, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cleanupLocked()
+	s.cleanupLocked("")
 	id, err := newID()
 	if err != nil {
 		return Record{}, err
@@ -74,8 +74,9 @@ func (s *MemoryStore) Confirm(_ context.Context, id string, approve bool) (Recor
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cleanupLocked()
-	item, ok := s.items[strings.TrimSpace(id)]
+	id = strings.TrimSpace(id)
+	s.cleanupLocked(id)
+	item, ok := s.items[id]
 	if !ok {
 		return Record{}, ErrNotFound
 	}
@@ -100,8 +101,9 @@ func (s *MemoryStore) ConsumeApproved(_ context.Context, id string, check Check)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cleanupLocked()
-	item, ok := s.items[strings.TrimSpace(id)]
+	id = strings.TrimSpace(id)
+	s.cleanupLocked(id)
+	item, ok := s.items[id]
 	if !ok {
 		return Record{}, ErrNotFound
 	}
@@ -128,9 +130,12 @@ func (s *MemoryStore) ConsumeApproved(_ context.Context, id string, check Check)
 }
 
 // cleanupLocked выполняет отдельный этап обработки, необходимый для корректной работы типа.
-func (s *MemoryStore) cleanupLocked() {
+func (s *MemoryStore) cleanupLocked(skipID string) {
 	now := s.now()
 	for id, item := range s.items {
+		if id == skipID {
+			continue
+		}
 		if isExpired(now, item.ExpiresAt) {
 			delete(s.items, id)
 		}

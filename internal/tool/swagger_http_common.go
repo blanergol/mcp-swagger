@@ -734,7 +734,7 @@ func validateResponse(endpoint swagger.ResolvedOperation, status int, body any) 
 		return []string{fmt.Sprintf("status %d is not defined in operation responses", status)}
 	}
 	if schema == nil || body == nil {
-		return nil
+		return []string{}
 	}
 	return uniqueStrings(validateValueAgainstSchema(body, schema, "response.body"))
 }
@@ -1497,7 +1497,7 @@ func isJSONContentType(contentType string) bool {
 // uniqueStrings выполняет локальный вспомогательный шаг для снижения сложности основной функции.
 func uniqueStrings(values []string) []string {
 	if len(values) == 0 {
-		return nil
+		return []string{}
 	}
 	seen := map[string]struct{}{}
 	out := make([]string, 0, len(values))
@@ -1513,7 +1513,7 @@ func uniqueStrings(values []string) []string {
 		out = append(out, item)
 	}
 	if len(out) == 0 {
-		return nil
+		return []string{}
 	}
 	return out
 }

@@ -198,6 +198,95 @@ func TestExecuteReturnsValidationMismatchWithoutFailure(t *testing.T) {
 	}
 }
 
+// TestExecuteReturnsEmptyResponseValidationErrorsArrayWhenValid verifies empty-array contract for responseValidation.errors.
+func TestExecuteReturnsEmptyResponseValidationErrorsArrayWhenValid(t *testing.T) {
+	t.Parallel()
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id":"123"}`))
+	}))
+	defer upstream.Close()
+
+	store := &executeTestStore{
+		endpoint: swagger.ResolvedOperation{
+			Method:       "GET",
+			BaseURL:      upstream.URL,
+			PathTemplate: "/users/{id}",
+			URLTemplate:  upstream.URL + "/users/{id}",
+			OperationID:  "getUserByID",
+			PathParams: []swagger.Param{
+				{Name: "id", In: "path", Required: true, Schema: map[string]any{"type": "string"}},
+			},
+			Responses: swagger.ResponseGroups{
+				Success: []swagger.Response{
+					{
+						Status: http.StatusOK,
+						BodySchema: map[string]any{
+							"type":     "object",
+							"required": []string{"id"},
+							"properties": map[string]any{
+								"id": map[string]any{"type": "string"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	executeTool := NewSwaggerExecuteTool(SwaggerExecuteDependencies{
+		Store: store,
+		Policy: policy.NewEvaluator(policy.Config{
+			Mode:           policy.ModeExecuteReadonly,
+			AllowedMethods: []string{"GET", "HEAD", "OPTIONS"},
+		}),
+		AuthProvider: upstreamauth.NewNoopProvider(),
+		HTTPDoer:     upstream.Client(),
+		Auditor:      audit.NewLogger(false, nil, nil),
+		Options: SwaggerExecuteOptions{
+			Mode:             policy.ModeExecuteReadonly,
+			ValidateRequest:  true,
+			ValidateResponse: true,
+			MaxRequestBytes:  1 << 20,
+			MaxResponseBytes: 1 << 20,
+			UserAgent:        "test-agent",
+		},
+	})
+
+	out, err := executeTool.Execute(context.Background(), map[string]any{
+		"operationId": "getUserByID",
+		"params": map[string]any{
+			"path": map[string]any{"id": "123"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("execute returned unexpected error: %v", err)
+	}
+
+	result, ok := out.(map[string]any)
+	if !ok {
+		t.Fatalf("unexpected execute output type: %T", out)
+	}
+	if okValue, _ := result["ok"].(bool); !okValue {
+		t.Fatalf("execute returned not-ok: %#v", result)
+	}
+
+	data, ok := result["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("result.data must be object: %#v", result["data"])
+	}
+	responseValidation, ok := data["responseValidation"].(map[string]any)
+	if !ok {
+		t.Fatalf("responseValidation must be object: %#v", data["responseValidation"])
+	}
+	if valid, _ := responseValidation["valid"].(bool); !valid {
+		t.Fatalf("responseValidation.valid must be true: %#v", responseValidation)
+	}
+	assertEmptyArrayValue(t, responseValidation["errors"], "responseValidation.errors")
+}
+
 // TestExecuteResponseBodyEncoding проверяет ожидаемое поведение в тестовом сценарии.
 func TestExecuteResponseBodyEncoding(t *testing.T) {
 	t.Parallel()

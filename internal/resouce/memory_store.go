@@ -71,9 +71,16 @@ func (s *MemoryStore) List(context.Context) ([]Descriptor, error) {
 func (s *MemoryStore) Get(_ context.Context, id string) (Item, error) {
 	s.mu.RLock()
 	item, ok := s.items[id]
-	s.mu.RUnlock()
-	if !ok {
-		return Item{}, ErrNotFound
+	if ok {
+		s.mu.RUnlock()
+		return item, nil
 	}
-	return item, nil
+	for _, candidate := range s.items {
+		if candidate.Descriptor.URI == id {
+			s.mu.RUnlock()
+			return candidate, nil
+		}
+	}
+	s.mu.RUnlock()
+	return Item{}, ErrNotFound
 }

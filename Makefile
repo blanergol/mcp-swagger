@@ -7,7 +7,8 @@ run:
 	go run ./cmd/mcp-server
 
 test:
-	go test ./...
+	go test -covermode=atomic -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
 
 lint:
 	golangci-lint run
