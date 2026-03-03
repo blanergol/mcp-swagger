@@ -88,7 +88,6 @@ docker compose up --build -d
 3. Убедитесь, что сервис работает:
 
 ```bash
-docker compose ps          # STATUS должен показывать (healthy)
 curl -s http://127.0.0.1:8080/healthz
 ```
 

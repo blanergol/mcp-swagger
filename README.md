@@ -85,10 +85,9 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-3. Check the service is healthy:
+3. Check the service responds:
 
 ```bash
-docker compose ps          # STATUS should show (healthy)
 curl -s http://127.0.0.1:8080/healthz
 ```
 
