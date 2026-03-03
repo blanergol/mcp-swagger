@@ -69,7 +69,18 @@ func (t *SwaggerGeneratePayloadTool) Execute(ctx context.Context, input any) (an
 	}
 
 	if endpoint.Request.BodySchema == nil && endpoint.Request.Examples == nil {
-		return errorResult("invalid_request", "operation does not define request body schema", map[string]any{"operationId": parsed.OperationID}), nil
+		contentTypes := append([]string(nil), endpoint.Request.ContentTypes...)
+		if contentTypes == nil {
+			contentTypes = []string{}
+		}
+		return okResult(map[string]any{
+			"operationId":  parsed.OperationID,
+			"strategy":     parsed.Strategy,
+			"seed":         parsed.Seed,
+			"contentTypes": contentTypes,
+			"body":         nil,
+			"warnings":     []string{"operation does not define request body schema; returning null body"},
+		}), nil
 	}
 
 	generator := newPayloadGenerator(parsed.Strategy, parsed.Seed)

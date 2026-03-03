@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/textproto"
@@ -348,7 +349,11 @@ func (t *SwaggerExecuteTool) Execute(ctx context.Context, input any) (any, error
 	auditEntry.ResponseStatus = resp.StatusCode
 	auditEntry.ResponseHeaders = flattenHTTPHeaders(resp.Header)
 
-	bodyPayload, err := readResponseBodyLimited(resp.Body, t.options.MaxResponseBytes)
+	maxResponseBytes := t.options.MaxResponseBytes
+	if maxResponseBytes <= 0 {
+		maxResponseBytes = 2 << 20
+	}
+	bodyPayload, truncated, err := readResponseBodyLimited(resp.Body, maxResponseBytes)
 	if err != nil {
 		return fail("upstream_error", err.Error(), nil)
 	}
@@ -365,6 +370,10 @@ func (t *SwaggerExecuteTool) Execute(ctx context.Context, input any) (any, error
 		"bodyEncoding": decoded.BodyEncoding,
 		"body":         decoded.Body,
 		"durationMs":   time.Since(startedAt).Milliseconds(),
+	}
+	if truncated {
+		result["responseTruncated"] = true
+		result["warnings"] = []string{fmt.Sprintf("response body exceeded MAX_RESPONSE_BYTES=%d and was truncated", maxResponseBytes)}
 	}
 	t.metrics.IncExecuteTotal(prepared.OperationID, prepared.Method, resp.StatusCode)
 

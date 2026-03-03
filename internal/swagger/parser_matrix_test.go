@@ -16,6 +16,37 @@ paths: {}
 `
 
 const minimalOpenAPIJSON = `{"openapi":"3.0.3","info":{"title":"test","version":"1.0.0"},"paths":{}}`
+const minimalSwaggerV2JSON = `{"swagger":"2.0","info":{"title":"test","version":"1.0.0"},"host":"example.com","basePath":"/api","schemes":["https"],"paths":{"/ping":{"get":{"operationId":"getPing","responses":{"200":{"description":"ok"}}}}}}`
+const openAPIWithExtraRefSiblingYAML = `openapi: 3.0.3
+info:
+  title: weather-like
+  version: "1.0.0"
+paths:
+  /observations:
+    get:
+      operationId: getObservations
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservationCollectionGeoJson"
+components:
+  schemas:
+    ObservationCollectionGeoJson:
+      $ref: "#/components/schemas/FeatureCollectionGeoJson"
+      pagination:
+        type: object
+        properties:
+          next:
+            type: string
+    FeatureCollectionGeoJson:
+      type: object
+      properties:
+        type:
+          type: string
+`
 
 // TestParseRawObjectMatrix protects parser format selection and malformed-input behavior.
 func TestParseRawObjectMatrix(t *testing.T) {
@@ -76,6 +107,8 @@ func TestOpenAPIParserParseMatrix(t *testing.T) {
 		{name: "valid yaml openapi", format: "yaml", raw: []byte(minimalOpenAPIYAML)},
 		{name: "valid json openapi", format: "json", raw: []byte(minimalOpenAPIJSON)},
 		{name: "valid auto yaml", format: "auto", raw: []byte(minimalOpenAPIYAML)},
+		{name: "valid swagger v2 json", format: "auto", raw: []byte(minimalSwaggerV2JSON)},
+		{name: "openapi with extra ref sibling field", format: "yaml", raw: []byte(openAPIWithExtraRefSiblingYAML)},
 		{name: "empty payload", format: "auto", raw: nil, wantErr: true, errText: "empty swagger payload"},
 		{name: "invalid json syntax", format: "json", raw: []byte(`{"openapi":`), wantErr: true},
 		{name: "invalid yaml syntax", format: "yaml", raw: []byte("openapi: ["), wantErr: true},

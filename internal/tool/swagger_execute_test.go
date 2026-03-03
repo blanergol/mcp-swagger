@@ -425,6 +425,78 @@ func TestExecuteResponseBodyEncoding(t *testing.T) {
 	}
 }
 
+// TestExecuteTruncatesLargeResponseWithoutFailure verifies execute returns ok=true for oversized responses.
+func TestExecuteTruncatesLargeResponseWithoutFailure(t *testing.T) {
+	t.Parallel()
+
+	largeBody := strings.Repeat("a", 64)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(largeBody))
+	}))
+	defer upstream.Close()
+
+	store := &executeTestStore{
+		endpoint: swagger.ResolvedOperation{
+			Method:       "GET",
+			BaseURL:      upstream.URL,
+			PathTemplate: "/payload",
+			URLTemplate:  upstream.URL + "/payload",
+			OperationID:  "getLargePayload",
+			Responses: swagger.ResponseGroups{
+				Success: []swagger.Response{{Status: http.StatusOK}},
+			},
+		},
+	}
+
+	executeTool := NewSwaggerExecuteTool(SwaggerExecuteDependencies{
+		Store: store,
+		Policy: policy.NewEvaluator(policy.Config{
+			Mode:           policy.ModeExecuteReadonly,
+			AllowedMethods: []string{"GET", "HEAD", "OPTIONS"},
+		}),
+		AuthProvider: upstreamauth.NewNoopProvider(),
+		HTTPDoer:     upstream.Client(),
+		Auditor:      audit.NewLogger(false, nil, nil),
+		Options: SwaggerExecuteOptions{
+			Mode:             policy.ModeExecuteReadonly,
+			ValidateRequest:  true,
+			ValidateResponse: false,
+			MaxRequestBytes:  1 << 20,
+			MaxResponseBytes: 16,
+			UserAgent:        "test-agent",
+		},
+	})
+
+	out, err := executeTool.Execute(context.Background(), map[string]any{
+		"operationId": "getLargePayload",
+	})
+	if err != nil {
+		t.Fatalf("execute returned unexpected error: %v", err)
+	}
+
+	result, ok := out.(map[string]any)
+	if !ok {
+		t.Fatalf("unexpected execute output type: %T", out)
+	}
+	if okValue, _ := result["ok"].(bool); !okValue {
+		t.Fatalf("execute returned not-ok: %#v", result)
+	}
+
+	data, ok := result["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("result.data must be object: %#v", result["data"])
+	}
+	if truncated, _ := data["responseTruncated"].(bool); !truncated {
+		t.Fatalf("expected responseTruncated=true, got %#v", data["responseTruncated"])
+	}
+	body, _ := data["body"].(string)
+	if len(body) != 16 {
+		t.Fatalf("expected truncated body length=16, got %d", len(body))
+	}
+}
+
 // TestExecuteInjectsCorrelationIDAndAudit проверяет ожидаемое поведение в тестовом сценарии.
 func TestExecuteInjectsCorrelationIDAndAudit(t *testing.T) {
 	t.Parallel()

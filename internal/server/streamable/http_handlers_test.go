@@ -120,8 +120,8 @@ func TestMCPInitializeOverHTTP(t *testing.T) {
 	if got := resp.Header.Get("Mcp-Session-Id"); strings.TrimSpace(got) == "" {
 		t.Fatalf("POST /mcp initialize missing Mcp-Session-Id header")
 	}
-	if got := resp.Header.Get("Content-Type"); !strings.Contains(got, "text/event-stream") {
-		t.Fatalf("POST /mcp content-type = %q, want text/event-stream", got)
+	if got := resp.Header.Get("Content-Type"); !strings.Contains(got, "application/json") {
+		t.Fatalf("POST /mcp content-type = %q, want application/json", got)
 	}
 
 	payload := string(body)
@@ -175,8 +175,8 @@ func TestMCPStreamableLifecycleAndListEndpoints(t *testing.T) {
 	if toolsResp.StatusCode != http.StatusOK {
 		t.Fatalf("POST tools/list status=%d want=%d body=%s", toolsResp.StatusCode, http.StatusOK, string(toolsBody))
 	}
-	if got := toolsResp.Header.Get("Content-Type"); !strings.Contains(got, "text/event-stream") {
-		t.Fatalf("tools/list content-type=%q want text/event-stream", got)
+	if got := toolsResp.Header.Get("Content-Type"); !strings.Contains(got, "application/json") {
+		t.Fatalf("tools/list content-type=%q want application/json", got)
 	}
 
 	toolsResult := mustFindJSONRPCResult(t, toolsBody, 2)
@@ -476,11 +476,23 @@ func readAllAndClose(t *testing.T, resp *http.Response) []byte {
 }
 
 // mustFindJSONRPCResult выполняет локальный вспомогательный шаг для снижения сложности основной функции.
-func mustFindJSONRPCResult(t *testing.T, ssePayload []byte, wantID int) map[string]any {
+func mustFindJSONRPCResult(t *testing.T, payload []byte, wantID int) map[string]any {
 	t.Helper()
-	events := extractSSEDataEvents(t, ssePayload)
+
+	msg := map[string]any{}
+	if err := json.Unmarshal(payload, &msg); err == nil {
+		if strings.TrimSpace(valueAsString(msg["jsonrpc"])) == "2.0" && jsonRPCIDEquals(msg["id"], wantID) {
+			result, ok := msg["result"].(map[string]any)
+			if !ok {
+				t.Fatalf("json-rpc response for id=%d has no result object: %#v", wantID, msg)
+			}
+			return result
+		}
+	}
+
+	events := extractSSEDataEvents(t, payload)
 	if len(events) == 0 {
-		t.Fatalf("no SSE data events found in payload: %q", string(ssePayload))
+		t.Fatalf("no JSON-RPC result found in payload: %q", string(payload))
 	}
 	for _, event := range events {
 		msg := map[string]any{}
@@ -499,7 +511,7 @@ func mustFindJSONRPCResult(t *testing.T, ssePayload []byte, wantID int) map[stri
 		}
 		return result
 	}
-	t.Fatalf("json-rpc response with id=%d not found in SSE payload: %s", wantID, string(ssePayload))
+	t.Fatalf("json-rpc response with id=%d not found in payload: %s", wantID, string(payload))
 	return nil
 }
 
@@ -612,6 +624,7 @@ func newTestHTTPHandlerWithConfig(t *testing.T, cfg config.Config) http.Handler 
 		return mcpServer
 	}, &mcp.StreamableHTTPOptions{
 		SessionTimeout: cfg.HTTPSessionTimeout,
+		JSONResponse:   true,
 		Logger:         slog.Default(),
 	})
 

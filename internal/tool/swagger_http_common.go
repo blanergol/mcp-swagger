@@ -606,17 +606,48 @@ func buildTargetURL(baseURL, path string, query map[string]string, allowNoBase b
 	if err != nil {
 		return "", fmt.Errorf("invalid base URL: %w", err)
 	}
-	rel, err := url.Parse(path)
+	pathPart, err := url.Parse(path)
 	if err != nil {
 		return "", fmt.Errorf("invalid path: %w", err)
 	}
-	resolved := base.ResolveReference(rel)
+	if pathPart.Scheme != "" || pathPart.Host != "" {
+		return "", errors.New("path must be relative")
+	}
+	base.Path = joinBaseAndEndpointPath(base.Path, pathPart.Path)
+	base.RawPath = ""
+	resolved := base
 	q := resolved.Query()
+	for key, values := range pathPart.Query() {
+		if len(values) == 0 {
+			continue
+		}
+		q.Set(key, values[len(values)-1])
+	}
 	for key, value := range query {
 		q.Set(key, value)
 	}
 	resolved.RawQuery = q.Encode()
+	resolved.Fragment = pathPart.Fragment
 	return resolved.String(), nil
+}
+
+// joinBaseAndEndpointPath выполняет локальный вспомогательный шаг для снижения сложности основной функции.
+func joinBaseAndEndpointPath(basePath, endpointPath string) string {
+	basePath = strings.TrimSpace(basePath)
+	endpointPath = strings.TrimSpace(endpointPath)
+	if endpointPath == "" {
+		if basePath == "" {
+			return "/"
+		}
+		return basePath
+	}
+	if !strings.HasPrefix(endpointPath, "/") {
+		endpointPath = "/" + endpointPath
+	}
+	if basePath == "" || basePath == "/" {
+		return endpointPath
+	}
+	return strings.TrimRight(basePath, "/") + endpointPath
 }
 
 // expandPathTemplate выполняет локальный вспомогательный шаг для снижения сложности основной функции.
@@ -1154,9 +1185,9 @@ func copyStringMap(input map[string]string) map[string]string {
 }
 
 // readResponseBodyLimited выполняет локальный вспомогательный шаг для снижения сложности основной функции.
-func readResponseBodyLimited(reader io.Reader, maxBytes int64) ([]byte, error) {
+func readResponseBodyLimited(reader io.Reader, maxBytes int64) ([]byte, bool, error) {
 	if reader == nil {
-		return nil, nil
+		return nil, false, nil
 	}
 	if maxBytes <= 0 {
 		maxBytes = 2 << 20
@@ -1164,12 +1195,12 @@ func readResponseBodyLimited(reader io.Reader, maxBytes int64) ([]byte, error) {
 	limited := io.LimitReader(reader, maxBytes+1)
 	payload, err := io.ReadAll(limited)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if int64(len(payload)) > maxBytes {
-		return nil, fmt.Errorf("response body exceeds MAX_RESPONSE_BYTES=%d", maxBytes)
+		return payload[:maxBytes], true, nil
 	}
-	return payload, nil
+	return payload, false, nil
 }
 
 // decodeResponseBody обновляет соответствующий счетчик или метрику наблюдаемости.

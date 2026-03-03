@@ -69,6 +69,7 @@ func (s *Server) Start(ctx context.Context) error {
 		return mcpServer
 	}, &mcp.StreamableHTTPOptions{
 		SessionTimeout: s.cfg.HTTPSessionTimeout,
+		JSONResponse:   true,
 		Logger:         slog.Default(),
 	})
 

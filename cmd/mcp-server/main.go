@@ -346,6 +346,10 @@ func validateSwaggerTargets(
 		if urlValue == "" {
 			return nil
 		}
+		if !isHTTPURL(urlValue) {
+			// Relative servers/baseURL are valid in OpenAPI and are resolved later with runtime base URL.
+			return nil
+		}
 		if _, ok := seen[urlValue]; ok {
 			return nil
 		}

@@ -104,3 +104,10 @@ paths:
       responses:
         '200':
           description: OK
+  /status:
+    get:
+      operationId: getStatusPayload
+      summary: Get status without request body
+      responses:
+        '200':
+          description: OK

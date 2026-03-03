@@ -134,6 +134,29 @@ func TestGeneratePayloadPrimitiveAndArray(t *testing.T) {
 	}
 }
 
+// TestGeneratePayloadReturnsWarningWhenOperationHasNoRequestBody verifies graceful behavior for body-less operations.
+func TestGeneratePayloadReturnsWarningWhenOperationHasNoRequestBody(t *testing.T) {
+	t.Parallel()
+
+	tool := NewSwaggerGeneratePayloadTool(newSwaggerStoreForPayloadTests(t))
+
+	out, err := tool.Execute(context.Background(), map[string]any{
+		"operationId": "getStatusPayload",
+	})
+	if err != nil {
+		t.Fatalf("execute generate_payload for body-less operation: %v", err)
+	}
+
+	result := mustToolResultData(t, out)
+	if body, exists := result["body"]; !exists || body != nil {
+		t.Fatalf("expected nil body for body-less operation, got %#v", result["body"])
+	}
+	warnings := asStringSlice(result["warnings"])
+	if !containsSubstring(warnings, "does not define request body schema") {
+		t.Fatalf("warnings must explain missing request body schema, got %#v", warnings)
+	}
+}
+
 // TestGeneratePayloadAppliesOverrides проверяет ожидаемое поведение в тестовом сценарии.
 func TestGeneratePayloadAppliesOverrides(t *testing.T) {
 	t.Parallel()

@@ -348,6 +348,13 @@ var toolSchemas = map[string]SchemaBundle{
 				},
 				"body":       map[string]any{},
 				"durationMs": map[string]any{"type": "integer", "minimum": 0},
+				"responseTruncated": map[string]any{
+					"type": "boolean",
+				},
+				"warnings": map[string]any{
+					"type":  "array",
+					"items": map[string]any{"type": "string"},
+				},
 				"responseValidation": map[string]any{
 					"type": "object",
 					"properties": map[string]any{

@@ -2,6 +2,7 @@ package tool
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -154,5 +155,37 @@ func TestParseValidateResponseInputNewAndLegacy(t *testing.T) {
 	}
 	if parsedLegacy.Headers["X-Request-Id"] != "abc" {
 		t.Fatalf("unexpected parsed legacy headers: %+v", parsedLegacy.Headers)
+	}
+}
+
+// TestReadResponseBodyLimitedTruncatesLargePayload verifies that oversized responses are truncated, not failed.
+func TestReadResponseBodyLimitedTruncatesLargePayload(t *testing.T) {
+	t.Parallel()
+
+	payload, truncated, err := readResponseBodyLimited(strings.NewReader("1234567890"), 4)
+	if err != nil {
+		t.Fatalf("readResponseBodyLimited returned unexpected error: %v", err)
+	}
+	if !truncated {
+		t.Fatalf("expected truncated=true for oversized payload")
+	}
+	if string(payload) != "1234" {
+		t.Fatalf("unexpected truncated payload: %q", string(payload))
+	}
+}
+
+// TestReadResponseBodyLimitedReturnsFullPayloadWhenWithinLimit verifies no truncation for small payloads.
+func TestReadResponseBodyLimitedReturnsFullPayloadWhenWithinLimit(t *testing.T) {
+	t.Parallel()
+
+	payload, truncated, err := readResponseBodyLimited(strings.NewReader("1234"), 8)
+	if err != nil {
+		t.Fatalf("readResponseBodyLimited returned unexpected error: %v", err)
+	}
+	if truncated {
+		t.Fatalf("expected truncated=false for payload within limit")
+	}
+	if string(payload) != "1234" {
+		t.Fatalf("unexpected payload: %q", string(payload))
 	}
 }
